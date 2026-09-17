@@ -1,0 +1,49 @@
+FROM ubuntu:24.04
+
+RUN apt-get update && \
+    apt-get install -y \
+    g++ \
+    cmake \
+    git \
+    libx11-dev \
+    libxrandr-dev \
+    libxcursor-dev \
+    libxi-dev \
+    libudev-dev \
+    libfreetype-dev \
+    libopenal-dev \
+    libflac-dev \
+    libvorbis-dev \
+    libogg-dev \
+    libgl1-mesa-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN git clone --branch 3.0.0 --depth 1 \
+    https://github.com/SFML/SFML.git /tmp/SFML
+
+RUN cmake -S /tmp/SFML -B /tmp/SFML/build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON \
+    -DSFML_BUILD_EXAMPLES=OFF \
+    -DSFML_BUILD_TEST_SUITE=OFF
+
+RUN cmake --build /tmp/SFML/build -j$(nproc)
+
+RUN cmake --install /tmp/SFML/build
+
+RUN ldconfig
+
+COPY ["2D Sidescroller/", "/app/"]
+
+RUN g++ -std=c++17 \
+    lobby_main.cpp \
+    LobbyServer.cpp \
+    -o lobby_server \
+    -I/usr/local/include \
+    -L/usr/local/lib \
+    -lsfml-network \
+    -lsfml-system
+
+CMD ["./lobby_server"]

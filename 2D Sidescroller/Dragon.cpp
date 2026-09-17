@@ -94,6 +94,14 @@ void Dragon::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_
 
 	if (currentAnimation == Takeoff.get())
 	{
+		std::cout
+			<< "TAKEOFF FRAME: "
+			<< currentAnimation->getCurrentFrame()
+			<< " Y: "
+			<< currentAnimation->getSprite().getPosition().y
+			<< " VY: "
+			<< velocity.y
+			<< std::endl;
 
 		if (currentAnimation->getCurrentFrame() >= 3)
 			velocity.y = -7.f;
@@ -649,9 +657,7 @@ void Dragon::landingLogic(std::vector<Tile>& tiles)
 				switchAnimation(Landing.get());
 
 			}
-
 		}
-
 	}
 
 	if (currentAnimation == Landing.get())
@@ -671,7 +677,6 @@ void Dragon::landingLogic(std::vector<Tile>& tiles)
 
 		if (currentAnimation->isFinished())
 		{
-
 			//velocity.y = 0.f;
 			isLanding = false;
 			switchAnimation(Idle.get());
@@ -691,11 +696,8 @@ void Dragon::landingLogic(std::vector<Tile>& tiles)
 			Flight->reset();	
 			Landing->reset();
 			Special->reset();
-			//Attack2->reset();
-			random = std::rand() % 4;
-
-			
-			
+			Attack2->reset();			
+			random = std::rand() % 4;			
 		}
 	}
 }
@@ -772,6 +774,7 @@ void Dragon::flightAttackLogic(std::vector<Tile>& tiles, float dt)
 
 	if (playOnce5)
 	{
+		std::cout << "RESTARTING" << std::endl;
 		dragonWaitClock.restart();
 		playOnce5 = false;
 	}
@@ -784,22 +787,20 @@ void Dragon::flightAttackLogic(std::vector<Tile>& tiles, float dt)
 	{
 		if (!teleported)
 		{
+			std::cout << "TELEPORTED" << std::endl;
 			currentAnimation->getSprite().setPosition({
 			helper.getGlobalBounds().getCenter().x + 3000.f, helper.getGlobalBounds().getCenter().y - 270.f});
 
 			teleported = true;   
 		}
-		
-		
+			
 		velocity.y = 0.f;
 		velocity.x =  -27.f;
 		currentAnimation->getSprite().setScale({ -1.7,1.7 });
 
 		if (playOnce6)
 		{
-			dragonWaitClock2.restart();
-
-			
+			dragonWaitClock2.restart();		
 			playOnce6 = false;
 		}
 
@@ -915,7 +916,8 @@ void Dragon::flightAttackLogic(std::vector<Tile>& tiles, float dt)
 					Takeoff->reset();
 					Flight->reset();
 					Landing->reset();
-					Special->reset();
+					Special->reset();					
+					Attack2->reset();
 					dragonLandSound.play();
 				}
 			}

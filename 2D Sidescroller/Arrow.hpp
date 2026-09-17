@@ -12,28 +12,25 @@ public:
 		sprite.setScale({ direction.x < 0.f ? -1.8f : 1.8f, 1.8f });
 		sprite.setOrigin({ 20,64 });
 
-		//int randomVelocity = std::rand() % 2000 + 1000;
-
 		velocity = direction * 2000.f;
 
 		arrowBox.setFillColor(sf::Color(255, 0, 0, 128));
 		arrowBox.setSize({ 30.f,10.f });
 		arrowBox.setScale({ 2,3 });
 
-		int random = 0;
+		//int random = 0;
 
-		if (gravityChange == 2)
-		    random = 500+ std::rand() % 400; // 500-900
-		else if (gravityChange == 1)
-			random = std::rand() % 1000 + 2000; // 2000-3000
+		//if (gravityChange == 2)
+		//    random = 500+ std::rand() % 400; // 500-900
+		//else if (gravityChange == 1)
+		//	random = std::rand() % 1000 + 2000; // 2000-3000
 
-		std::cout << gravityChange << std::endl;
+		//std::cout << gravityChange << std::endl;
 
-		gravity = random;
+		gravity = gravityChange;
 		
-
-		if (direction.x < 0.f)
-		arrowBox.setOrigin({ 42,30 });
+				if (direction.x < 0.f)
+	    	arrowBox.setOrigin({ 42,30 });
 		else if (direction.x > 0.f)
 			arrowBox.setOrigin({ -13,30 });
 		
@@ -45,7 +42,7 @@ public:
 	{
 		velocity.y += gravity * dt;
 
-		arrowBox.setPosition(sprite.getPosition());
+		arrowBox.setPosition({ sprite.getPosition().x, sprite.getPosition().y + 15.f });
 
 		sprite.move({ velocity.x * dt, 0 });
 
@@ -64,6 +61,7 @@ public:
 		}
 
 		lifeTime -= dt;
+
 	}
 
 	bool isExpired()
@@ -101,6 +99,21 @@ public:
 		gravity = value;
 	}
 
+	void reflect()
+	{
+		velocity.x *= -1;
+	}
+
+	void updateDirectionVisuals()
+	{
+		sprite.setScale({ velocity.x < 0.f ? -1.8f : 1.8f, 1.8f });
+
+		if (velocity.x < 0.f)
+			arrowBox.setOrigin({ 42,30 });
+		else
+			arrowBox.setOrigin({ -13,30 });
+	}
+
 	sf::Vector2f velocity;
 
 	sf::RectangleShape arrowBox;
@@ -111,16 +124,19 @@ public:
 
 	sf::RectangleShape debugBox;
 
-private:
-
-	//sf::Sprite sprite;
-
-	bool arrowOnTile = false;
-
-	float gravity = 200.f;
+	bool hasHit = false;
 
 	bool arrowGround = false;
 
-	//sf::Vector2f velocity;
-	
+	bool wasReflected = false;
+
+	bool hasBeenReflected = false;
+
+	int id = -1;
+
+	float gravity = 0.f;
+
+private:
+
+	bool arrowOnTile = false;
 };

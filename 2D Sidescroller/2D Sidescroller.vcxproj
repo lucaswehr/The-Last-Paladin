@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -70,6 +70,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)PlayGame\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)PlayGame\</OutDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -136,9 +142,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Arrow.cpp" />
+    <ClCompile Include="AssetManager.cpp" />
+    <ClCompile Include="Client.cpp" />
+    <ClCompile Include="DeflectionDemo.cpp" />
     <ClCompile Include="Dragon.cpp" />
     <ClCompile Include="Knight.cpp" />
+    <ClCompile Include="Level.cpp" />
+    <ClCompile Include="LobbyClient.cpp" />
+    <ClCompile Include="LobbyServer.cpp" />
+    <ClCompile Include="lobby_main.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ParryDemo.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Samurai.cpp" />
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="text.cpp" />
     <ClCompile Include="Tile.cpp" />
@@ -147,14 +163,37 @@
   <ItemGroup>
     <ClInclude Include="Animation.hpp" />
     <ClInclude Include="Arrow.hpp" />
+    <ClInclude Include="AssetManager.hpp" />
+    <ClInclude Include="attackData.h" />
+    <ClInclude Include="CharacterType.h" />
+    <ClInclude Include="DebugOverlay.hpp" />
+    <ClInclude Include="DeflectionDemo.hpp" />
     <ClInclude Include="Dragon.hpp" />
     <ClInclude Include="Enemy.hpp" />
     <ClInclude Include="Healthbar.hpp" />
+    <ClInclude Include="HelperMain.hpp" />
+    <ClInclude Include="InputState.hpp" />
     <ClInclude Include="Knight.hpp" />
+    <ClInclude Include="ParryDemo.hpp" />
+    <ClInclude Include="Player.hpp" />
+    <ClInclude Include="PlayerFactory.hpp" />
+    <ClInclude Include="PlayerTextures.h" />
+    <ClInclude Include="Level.hpp" />
+    <ClInclude Include="LobbyClient.hpp" />
+    <ClInclude Include="LobbyServer.hpp" />
+    <ClInclude Include="PacketType.h" />
+    <ClInclude Include="PlayerState.hpp" />
+    <ClInclude Include="Samurai.hpp" />
+    <ClInclude Include="Server.cpp" />
+    <ClInclude Include="Server.hpp" />
+    <ClInclude Include="ServerInfo.h" />
     <ClInclude Include="Skeleton.hpp" />
     <ClInclude Include="text.hpp" />
+    <ClInclude Include="TextBox.hpp" />
     <ClInclude Include="Tile.hpp" />
+    <ClInclude Include="UI-Helper.hpp" />
     <ClInclude Include="wolf.hpp" />
+    <ClInclude Include="Client.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

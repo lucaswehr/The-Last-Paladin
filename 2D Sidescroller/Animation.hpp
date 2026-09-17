@@ -4,6 +4,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Audio.hpp>
 #include <SFML/System.hpp>
+#include <SFML/Network.hpp>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>  
@@ -24,10 +25,8 @@ class Animation
 {
 public:
 
-
-
-    Animation(sf::Texture& texture, int frameCount, int frameRows, float frameDuration, int rowToAnimate = 0, bool enableFlip = false, bool finished = false)
-        : texture(texture), frameCount(frameCount), frameDuration(frameDuration), currentFrame(0), elapsedTime(0.f), sprite(texture), frameRows(frameRows), rowToAnimate(rowToAnimate), enableFlip(enableFlip), shouldLoop(finished), finished(false) {
+    Animation(sf::Texture& texture, int frameCount, int frameRows, float frameDuration, int rowToAnimate = 0, bool enableFlip = false, bool finished = false, bool isKnight = false)
+        : texture(texture), frameCount(frameCount), frameDuration(frameDuration), currentFrame(0), elapsedTime(0.f), sprite(texture), frameRows(frameRows), rowToAnimate(rowToAnimate), enableFlip(enableFlip), shouldLoop(finished), finished(false), isKnight(isKnight) {
 
         updateTexture();
     }
@@ -95,6 +94,12 @@ public:
         updateTexture(); 
     }
 
+    void setInitalDirectionToLeft()
+    {
+        direction = Direction::Left;
+        updateTexture();
+    }
+
     void setScale(const sf::Vector2f& scale) {
         this->sprite.setScale(scale);
     }
@@ -127,6 +132,22 @@ public:
 		frameDuration = newTime;
 	}
 
+    void setFrame(int frame)
+    {
+        currentFrame = frame;
+        updateTexture();
+    }
+
+    int nextFrame()
+    {
+        return currentFrame++;
+    }
+
+    int getFrameCount()
+    {
+        return frameCount;
+    }
+
     void setOffset(const sf::Vector2f& off) { offset = off; }
     sf::Vector2f getOffset() const { return offset; }
 
@@ -144,6 +165,7 @@ private:
     bool enableFlip;
     sf::Vector2f baseScale = { 2.f, 2.f };
 
+    bool isKnight;
     bool finished;
     bool shouldLoop;
 
@@ -168,7 +190,14 @@ private:
         {         
             sprite.setScale(sf::Vector2f(2.f * (direction == Direction::Left ? -1.f : 1.f), 2.f));
 
-            sprite.setOrigin(sf::Vector2f(sprite.getLocalBounds().size.x / 2.f - 31, sprite.getLocalBounds().size.y / 2.f - 21));
+            if (isKnight)
+            {
+                sprite.setOrigin(sf::Vector2f(sprite.getLocalBounds().size.x / 2.f - 31, sprite.getLocalBounds().size.y / 2.f - 21));
+            }
+            else {
+                sprite.setOrigin(sf::Vector2f(sprite.getLocalBounds().size.x / 2.f, sprite.getLocalBounds().size.y / 2.f - 21));
+            }
+          
 
         }
        

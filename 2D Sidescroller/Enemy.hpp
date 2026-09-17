@@ -1,5 +1,5 @@
 #pragma once
-
+#include <memory>
 #include "Animation.hpp"
 #include "Tile.hpp"
 //#include "wolf.hpp"

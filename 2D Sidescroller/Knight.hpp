@@ -6,68 +6,71 @@
 #include "Enemy.hpp"
 #include "Arrow.hpp"
 #include "text.hpp"
+#include "PlayerState.hpp"
+#include "attackData.h"
+#include "Healthbar.hpp"
+#include "PlayerTextures.h"
+#include "InputState.hpp"
+#include "Player.hpp"
 
-class Knight 
+class Knight : public Player
 {
 public:
 
-	Knight(sf::Texture& walk2, sf::Texture& Idle2, sf::Texture& jump2, sf::Texture& attack1, sf::Texture& attack2, sf::Texture& attack3, sf::Texture& run, sf::Texture& shield, sf::Texture& runAttack, sf::Texture& hurtTexture, sf::Texture& deadTexture, sf::Texture& hangingTexture, sf::Texture& climbTexture, sf::Texture& rollTexture, sf::Texture& elixirTexture, sf::Texture& potionTexture, std::string& fontText) :
-		Idle(Idle2, 4, 1, 0.3f, 0, true, true), //Texture, number of frames, rows, speed, 0 if its just one row of animatoin, if it should invert, if the animation should loop infintly
-		walk(walk2, 8, 1, 0.1f, 0, true, true),
-		jump(jump2, 6, 1, 0.15f, 0, true, true),
-		attack1(attack1, 5, 1, 0.03f, 0, true, false),
-		attack2(attack2, 4, 1, 0.05f, 0, true, false),
-		attack3(attack3, 4, 1, 0.05f, 0, true, false),
-		run(run, 7, 1, 0.1f, 0, true, true),
-		guard(shield, 5, 1, 0.1f, 0, true, true),
-		runningAttack(runAttack, 6, 1, 0.1f, 0, true, false),
-		hurt(hurtTexture, 2, 1, 0.25f, 0, true, true),
-		dead(deadTexture, 6, 1, 0.1f, 0, false, false),
-		hanging(hangingTexture,6,1, 0.1f,0,true, true),
-		climbing(climbTexture,6, 1, 0.1f , 0, true, false),
-		roll(rollTexture, 6, 1, 0.1f, 0, true, false),
-		elixir(elixirTexture, 4, 1, 0.2f, 0, true, false),
-		healthText(fontText, "Health: ", 840, 800.f, sf::Color::White, 90),
-		deathText(fontText, "You Died", 500.f, 1000.f, sf::Color::Red, 250),
-		potionNumText(fontText, "", 500.f, 1000.f, sf::Color::White, 40),
-		ending(fontText, "Dragon Slain", 840, 800.f, sf::Color::White, 250),
-		currentAnimation(&Idle),
-		walkSound1(walkBuffer1),
-		walkSound2(walkBuffer2),
-		attackSound1(attackBuffer1),
-		attackSound2(attackBuffer2),
-		attackSound3(attackBuffer3),
-		jumpSound1(jumpBuffer1),
-		jumpSound2(jumpBuffer2),
-		hurtSound1(hurtBuffer1),
-		hurtSound2(hurtBuffer2),
-		hurtSound3(hurtBuffer3),
-		shieldImpactSound1(shieldImpactBuffer1),
-		shieldImpactSound2(shieldImpactBuffer2),
-		deathSound1(deathBuffer1),
-		deathSound2(deathBuffer2),
-		hangSound1(hangBuffer1),
-		dragonScreamSound(dragonScreamBuffer),
-		potionSound(potionSoundBuffer),
-		healthPotion(potionTexture),
-		enemeyFelledSound(enemeyFelledBuffer)
+	Knight(float xPos, float yPos, const knightTextures& textures,std::string& fontText, sf::Color& color, sf::Font& standardFont) :
+		Player(100, 50, 5.f, 8.f, -500.f, 1200.f, 6.f, color, standardFont),
+		Idle(textures.idleTex, 4, 1, 0.3f, 0, true, true, true), //Texture, number of frames, rows, speed, 0 if its just one row of animatoin, if it should invert, if the animation should loop infintly, isKnight
+		walk(textures.walkTex, 8, 1, 0.1f, 0, true, true, true),
+		jump(textures.jumpTex, 6, 1, 0.15f, 0, true, true,true),
+		attack1(textures.attack1Tex, 5, 1, 0.06f, 0, true, false, true),
+		attack2(textures.attack2Tex, 4, 1, 0.07f, 0, true, false, true),
+		attack3(textures.attack3Tex, 4, 1, 0.07f, 0, true, false, true),
+		run(textures.runTex, 7, 1, 0.1f, 0, true, true, true),
+		guard(textures.shieldTex, 4, 1, 0.15f, 0, true, false, true),
+		runningAttack(textures.runAttackTex, 6, 1, 0.1f, 0, true, false, true),
+		hurt(textures.hurtTex, 2, 1, 0.25f, 0, true, true, true),
+		dead(textures.deadTex, 6, 1, 0.1f, 0, false, false, true),
+		hanging(textures.hangingTex,6,1, 0.1f,0,true, true, true),
+		climbing(textures.climbTex,6, 1, 0.1f , 0, true, false, true),
+		roll(textures.rollTex, 6, 1, 0.1f, 0, true, false, true),
+		elixir(textures.elixirTex, 4, 1, 0.3f, 0, true, false, true),
+		jumpAttack(textures.jumpAttackTex, 5, 1, 0.15f,0,true, false, true),						
+		dragonScreamSound(dragonScreamBuffer),		
+		nameText(nameFont)
 	{
+
+		stunHoldFrame = 1;
+
+		potionNumber = 1;
+		currentAnimation = &Idle;
 		
+		if (!nameFont.openFromFile(fontText))
+		{
+			std::cout << "Error in text constructor in Knight class" << std::endl;
+		}
+
+		nameText.setFont(nameFont);
+		nameText.setCharacterSize(16);
+		nameText.setFillColor(sf::Color::White);
+		nameText.setOutlineColor(sf::Color::Black);
+		nameText.setOutlineThickness(2);
+
 		initializeSounds();
-		knightBox.setSize({ 32.f, 48.f });
-		knightBox.setScale({ 2,2.5 });
-		knightBox.setOrigin({ 17.f, -20.f });
-		knightBox.setFillColor(sf::Color(255, 0, 0, 128));
+
+		playerBox.setSize({ 32.f, 48.f });
+		playerBox.setScale({ 2,2.5 });
+		playerBox.setOrigin({ 17.f, -20.f });
+		playerBox.setFillColor(sf::Color(255, 0, 0, 128));
 
 		attackBox.setSize({ 32.f, 48.f });
 		attackBox.setScale({ 4,2.5 });
 	    attackBox.setFillColor(sf::Color(255, 0, 0, 128));
 		attackBox.setOrigin({ 17.f, -20.f });
 
-		guardBox.setSize({ 15.f, 40.f });
-		guardBox.setScale({ 2,2.5 });
-		guardBox.setOrigin({ -10.f, -20.f });
-		guardBox.setFillColor(sf::Color(255, 0, 0, 128));
+		specialAttackBox.setSize({ 35.f, 40.f });
+		specialAttackBox.setScale({ 2,2.5 });
+		specialAttackBox.setOrigin({ -10.f, -20.f });
+		specialAttackBox.setFillColor(sf::Color(255, 0, 0, 128));
 
 		rightLureBox.setSize({ 300.f, 10.f });
 		rightLureBox.setScale({ 2,2.5 });
@@ -93,48 +96,27 @@ public:
 		bossMusicBox2.setScale({ 1,1.2 });
 		bossMusicBox2.setOrigin({ 20.f, 10.f });
 		bossMusicBox2.setFillColor(sf::Color(0, 0, 255, 128));
-
-		healthPotion.setScale({ 4,4 });
+		
+		//potionSprite.setScale({ 4,4 });
 
 		bossMusicBox.setPosition({ 7000,-300 });
 
 		bossMusicBox2.setPosition({ 10900,200 });
-
-		dragonScreamBuffer.loadFromFile("Sounds/DragonScream.mp3");
-		dragonScreamSound.setBuffer(dragonScreamBuffer);
-
-		potionSoundBuffer.loadFromFile("Sounds/potionSound.wav");
-		potionSound.setBuffer(potionSoundBuffer);
-
-		enemeyFelledBuffer.loadFromFile("Sounds/enemeyFelled.mp3");
-		enemeyFelledSound.setBuffer(enemeyFelledBuffer);
 		
-		float startX = 400.f;  // X start position on map
-		float startY = 1825.f; // Y start position on ground level
+		if (xPos > 1770.f / 2) lastDir = Direction::Left;
+		else lastDir = Direction::Right;
+			
+		//400
+		//1825
+		float startX = xPos;  // X start position on map
+		float startY = yPos; // Y start position on ground level
 
-		knightBox.setPosition({ startX, startY });
+		playerBox.setPosition({ startX, startY });
 		currentAnimation->getSprite().setPosition({ startX, startY });
-		
+	
+		playerIdentifier.setFillColor(color);
 
-		int randomNumber = std::rand() % 3 + 1;
-
-		if (randomNumber == 1)
-		{
-			music.openFromFile("Sounds/music.mp3");
-		}
-		else if (randomNumber == 2)
-		{
-			music.openFromFile("Sounds/music2.mp3");
-		}
-		else
-		{
-			music.openFromFile("Sounds/Woodland Fantasy.mp3");
-		}
-
-		deathMusic.openFromFile("Sounds/YouDied.mp3");
-		
-
-		healthText.setPosition(currentAnimation->getPosition().x - 200, currentAnimation->getPosition().y - 600);
+		playerIdentifier.setRadius(7);
 
 	}
 
@@ -144,26 +126,10 @@ public:
 
 	
 
-	void update(float dt, std::vector<Tile> tiles, std::vector<std::unique_ptr<Enemy>>& enemies, std::vector<Arrow>& arrows)
+	void updateSinglePlayer(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies, std::vector<Arrow>& arrows, sf::Font& standardFont) override
 	{
+		cout << playerBox.getPosition().y << endl;
 		potionNumText.setString(std::to_string(potionNumber));
-
-		if (health > 0)
-			healthText.setString("Health: " + std::to_string(health));
-		else
-			healthText.setString("Health: " + std::to_string(0));
-		
-		if (isRolling)
-		{
-			if (lastDir == Direction::Right)
-			knightBox.setPosition({ currentAnimation->getSprite().getPosition().x + 60, currentAnimation->getSprite().getPosition().y});
-			else
-				knightBox.setPosition({ currentAnimation->getSprite().getPosition().x - 60, currentAnimation->getSprite().getPosition().y });
-		}
-		else if (!isHanging )
-		{
-			knightBox.setPosition({ currentAnimation->getSprite().getPosition() });
-		}
 
 		rightLureBox.setPosition({ currentAnimation->getSprite().getPosition() });
 
@@ -171,348 +137,196 @@ public:
 
 		climbingBox.setPosition({ currentAnimation->getSprite().getPosition() });
 
-		isGuarding = false;
+		currentAnimation->setDirection(lastDir);
 
-		if (this->lastDir == Direction::Left)
-		{
-			attackBox.setPosition({ currentAnimation->getSprite().getPosition().x + 90.f * -1 , currentAnimation->getSprite().getPosition().y });
-			guardBox.setPosition({ currentAnimation->getSprite().getPosition().x + 70.f * -1 , currentAnimation->getSprite().getPosition().y });
-			climbingBox.setPosition({ currentAnimation->getSprite().getPosition().x + 15.f * -1 , currentAnimation->getSprite().getPosition().y });
+		updateDamageText(dt);
 
+		if (handleDeathLogic(dt, tiles)) return;
 
-		}
-		else
-		{
-	    	attackBox.setPosition({ currentAnimation->getSprite().getPosition().x + 90.f, currentAnimation->getSprite().getPosition().y });
-			guardBox.setPosition({ currentAnimation->getSprite().getPosition().x + 0.f, currentAnimation->getSprite().getPosition().y });
-		}
-
-		if (health <= 0 || knightBox.getPosition().y > 2200.f)
-		{
-			if (!playOnce)
-		    {
-				int random = std::rand() % 2;
-				(random == 0 ? deathSound1 : deathSound2).play();
-				
-				switchAnimation(&dead);
-				health = 0;
-				playOnce = true;
-
-			}
-
-			if (currentAnimation->isFinished())
-			{
-				isDead = true;
-				velocity.x = 0.f;
-				
-			}
-
-			currentAnimation->getSprite().setScale({ lastDir == Direction::Right ? 2.f : -2.f, 2.f });
-
-			currentAnimation->getSprite().setOrigin(sf::Vector2f(currentAnimation->getSprite().getLocalBounds().size.x / 2.f - 31, currentAnimation->getSprite().getLocalBounds().size.y / 2.f - 21));
-
-			updateGravity(dt, tiles);
-
-			currentAnimation->update(dt);
-
-			return;
-
-		}
-
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R) && !isDrinking && !isJumping && !isRolling && !isSprinting && !isSprintAttacking && !isAttacking && potionNumber > 0)
-		{
-			elixir.getSprite().setPosition({ knightBox.getPosition().x - 100,  knightBox.getPosition().y - 100 });
-			switchAnimation(&elixir);
-			isDrinking = true;
-			currentAnimation->reset();
-			
-		}
-
-		if (isDrinking && isHurt)
-		{		
-			isDrinking = false;
-
-		}
-		else if (isDrinking)
-		{
-			if(!isHurt)
-			velocity.x = 0.f;
-
-			//knightBox.setPosition({ currentAnimation->getPosition().x + 20, currentAnimation->getPosition().y });
-
-			if (currentAnimation->getCurrentFrame() == 2)
-			{
-				potionSound.play();
-			}
-
-			if (currentAnimation->isFinished())
-			{
-				health += 50;
-				potionNumber--;
-
-				if (health > 100) health = 100;
-				
-				isDrinking = false;
-				
-			}
-		}
-
-
-		Direction currentDir = lastDir;
+		updatePotionLogic(standardFont);
+		updateBoundryBoxes();
 
 		currentAnimation->setDirection(lastDir);
 
-		bool isWalking = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D);
-		bool shouldPlayWalkSound = isWalking && isOnGround && !isAttacking && !isSprintAttacking && !postAttackCooldown;
+		InputState input = readInput();
 
-		if (!isDrinking)
-		attackLogic(enemies, dt);
-
-		
-
-		bool isWPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space );
-
-		if (isWPressed && !wasWPressedLastFrame)
+		if (!isHurt && !isDrinking && !isStunned && !isClimbing)
 		{
-			jumpCount++;
-			wPressed++;
+			handleActions(input, dt);
 
-			if (!isJumping && !isSprintAttacking && !postAttackCooldown && !isRolling && !isDrinking && !isAttacking)
-			{
-				//std::cout << "INSDIE JUMPING ANIMAION" << std::endl;
-				velocity.y = jumpStrength;
-				isJumping = true;
-				switchAnimation(&jump);
-				isSprinting = false;
-				currentAnimation->reset();
-				isOnGround = false;
+			updateJumpAttack(dt);
+			updateJumpAttackCooldown(dt);
 
-				int randomNumber = std::rand() % 2 + 1;
+			updateRollLogic();
 
-				if (randomNumber == 1)
-				{
-					jumpSound1.play();
-				}
-				else
-				{
-					jumpSound2.play();
-				}
+			updateAttack(dt);
+			updateAttackCooldown(dt);
 
-			}
-			
-		}
+			updateSprintAttack();
+			updateSprintAttackCooldown(dt);
 
-		wasWPressedLastFrame = isWPressed;
-		bool rightKeyPressed = false;
+			updateSpecialAttack(dt, tiles);
 
-		if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && isSprinting && !isAttacking && !isJumping && !isRolling && !isDrinking)
-		{
-			switchAnimation(&runningAttack);
-			currentAnimation->reset();
-			isSprinting = false;
-			isSprintAttacking = true;
-
-		}
-
-		if (!isHurt && !isDrinking)
-		{
-			float timeSinceLastRoll = rollDelayClock.getElapsedTime().asSeconds();
-
-			rollDelayClock.start();
-
-			if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right) && !isRolling && !isJumping && !isSprinting && !isDrinking && timeSinceLastRoll >= minRollDelay)
-			{
-			
-				isRolling = true;
-				switchAnimation(&roll);
-
-				currentAnimation->reset();
-
-				rollDelayClock.reset();
-					
-				
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) && !isJumping && !isAttacking && !postAttackCooldown && !isSprintAttacking && !isSprinting && !isRolling && !isDrinking)
-			{
-				isSprinting = false;
-				isSprintAttacking = false;
-				switchAnimation(&this->guard);
-				isGuarding = true;
-				velocity.x = 0.f;
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) && !isAttacking && !postAttackCooldown && !isSprintAttacking && !blockRight && !isHanging && !isRolling && !isDrinking) {
-				lastDir = Direction::Right;
-					
-				velocity.x = 5.f;
-
-				if (!isJumping && !isAttacking && !postAttackCooldown) switchAnimation(&walk);
-				isSprinting = false;
-				isSprintAttacking = false;
-
-
-				if (shouldPlayWalkSound && walkSoundClock.getElapsedTime() >= walkInterval)
-				{
-					if (playFirstWalkSound)
-						walkSound1.play();
-					else
-						walkSound2.play();
-
-					playFirstWalkSound = !playFirstWalkSound;
-					walkSoundClock.restart();
-				}
-
-
-
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) && !isAttacking && !isSprintAttacking && !isRolling && !isDrinking)
-				{
-					if ((!isJumping && !blockLeft) || (!isJumping && !blockRight) || !isJumping && !isRolling )
-					{
-						switchAnimation(&run);
-					}
-
-					velocity.x = 8.f;
-					isSprinting = true;
-
-				}
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) && !postAttackCooldown && !isSprintAttacking && !blockLeft && !isHanging && !isRolling && !isDrinking)
-			{
-				
-				lastDir = Direction::Left;
-
-				velocity.x = -5.f;
-				
-				isSprinting = false;
-				isSprintAttacking = false;
-				if (!isJumping && !isAttacking && !postAttackCooldown) switchAnimation(&walk);
-
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) && !isAttacking && !isSprintAttacking && !blockLeft && !isRolling && !isDrinking)
-				{
-					//std::cout << "Sprintng" << std::endl;
-					if (!isJumping && !isRolling)
-					{
-						switchAnimation(&run);
-					}
-
-
-
-					velocity.x = -8.f;
-					isSprinting = true;
-
-				}
-
-
-
-				if (shouldPlayWalkSound && walkSoundClock.getElapsedTime() >= walkInterval)
-				{
-					if (playFirstWalkSound)
-						walkSound1.play();
-					else
-						walkSound2.play();
-
-					playFirstWalkSound = !playFirstWalkSound;
-					walkSoundClock.restart();
-				}
-
-
-			}
-			else if (!isRolling && ((!isJumping && !isAttacking && !postAttackCooldown && !isSprinting && !isSprintAttacking && !isDrinking) || blockLeft || blockRight || isSprinting || isClimbing)) {
-				switchAnimation(&Idle);
-				isSprinting = false;
-				isSprintAttacking = false;
-				velocity.x = 0.f;
-				
-			}
-
-
-			if (isJumping)
+			if (isJumping && !isJumpAttacking)
 			{
 				switchAnimation(&jump);
+				state = PlayerState::Jump;
 			}
 
-			if (isOnGround)
+			if (isNormalAttacking && isOnGround) velocity.x = 0.f;
+
+			if ((isSpecialAttack && currentAnimation->isFinished()))
 			{
-				jumpCount = 0;
+				isSpecialAttack = false;
+				state = PlayerState::Idle;
 			}
-
-
-		
-			///////////////////////GRAVITY////////////////////////////////
-
-			if (isAttacking && isOnGround || isSprinting && blockLeft || isSprinting && blockRight)
-			{
-				velocity.x = 0.f;
-			}
-
 		}
+
+		if (isHurt)
+		{
+			cout << "HURTING" << endl;
+			isNormalAttacking = false;
+			isSprintAttacking = false;
+			isJumpAttacking = false;
+		}
+
 
 		enemyKnightCollision(enemies, arrows, dt);
-
-		if (isHurt && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
-		{
-			switchAnimation(&attack1);
-		}
-
-		if (isRolling)
-		{
-			
-			if (lastDir == Direction::Left)
-			{
-				velocity.x = -8.f;
-			}
-			else if (lastDir == Direction::Right)
-			{
-				velocity.x = 8.f;
-			}
-
-			if (currentAnimation->isFinished())
-			{
-				velocity.x = 0.f;
-
-				isRolling = false;
-				//switchAnimation(&Idle);
-
-				if (lastDir == Direction::Right)
-				currentAnimation->getSprite().setPosition({ currentAnimation->getPosition().x + 60.f, currentAnimation->getPosition().y });
-				else
-					currentAnimation->getSprite().setPosition({ currentAnimation->getPosition().x - 60.f, currentAnimation->getPosition().y });
-
-				
-			}
-
 		
-		}
-
-
+		updateHitBoxWindow(dt);
 		climbingLogic(tiles);
 		updateGravity(dt, tiles);
 		lureLogic(enemies);
 		pullUpLogic();
 		musicLogic();
 
+		switchAnimationByState(state);
+
+		lastInput = input;
+
+		currentAnimation->getSprite().setPosition(playerBox.getPosition() + animationOffset());
+
 		currentAnimation->update(dt);
 	}
 
-	void draw(sf::RenderWindow& window, std::vector<Tile>& tiles) {
-		
+	void draw(sf::RenderWindow& window) override
+	{
+		window.draw(currentAnimation->getSprite());
 
-		 for (auto& deco : decorations) {
-			 deco.draw(window);
-		 }
+		for (const auto& damageNumber : damageNumbers)
+		{
+			window.draw(damageNumber.text);
+		}
+		//window.draw(playerIdentifier);
 
 		//window.draw(rightLureBox);
 		//window.draw(leftLureBox);
-	    //window.draw(guardBox);
+		//window.draw(specialAttackBox);
 		//window.draw(climbingBox);
-		//window.draw(bossMusicBox);
-		//window.draw(bossMusicBox2);
-		//window.draw(healthPotion);
-
-		window.draw(currentAnimation->getSprite());
-		
+		/*window.draw(bossMusicBox);
+		window.draw(bossMusicBox2);
+		window.draw(healthPotion);*/
+		//window.draw(playerBox);
+		//window.draw(attackBox);
 	}
 	
-	void updateGravity(float dt, std::vector<Tile> tiles);
+	void setPosition(float x, float y)
+	{
+		currentAnimation->setPosition(x, y);
+	}
+
+	// -------------------------------------MULTIPLAYER FUNCTIONS---------------------------------------------//
+
+	void updateMultiplayer(float dt, std::vector<Tile>& tiles, sf::Font& standardFont) override;
+
+	void switchAnimationByState(PlayerState& state) override;
+
+	void updateRemotePlayers(float dt, vector<Tile>& tiles) override;
+
+	bool isAttackingBool() override;
+	bool isSpecialAttackBool();
+
+	sf::RectangleShape getAttackBox();
+
+	void determineCharacterHitbox() override;
+
+	void applyDamage(int damage, Direction attackerDir);
+
+	void updateHitBoxWindow(float dt) override;
+
+	void startAttack(const attackData& data, Direction dir) override;
+
+	bool isSprintAttackingBool();
+
+	void MultiplayerDeath();
+
+	void setKnightName(std::string& newName);
+
+	bool isGrounded();
+
+	void jumpAttackLogic(float dt);
+
+	bool isJumpAttackingBool();
+
+	void updateBoundryBoxes() override;
+
+	bool handleDeathLogic(float dt, std::vector<Tile>& tiles);
+
+	void handleActions(InputState& input, float dt) override;
+	void attackLogicMultiplayer() override;
+	
+	bool tryStartJumpAttack(InputState& input, float dt);
+	void updateJumpAttack(float dt);
+	void updateJumpAttackCooldown(float dt);
+
+	bool tryStartSprintAttack(InputState& input);
+	void sprintAttackLogic();
+	void updateSprintAttackCooldown(float dt);
+	void updateSprintAttack();
+
+	bool tryStartRoll(InputState& input);
+	void rollLogic();
+	void updateRollLogic();
+
+	bool tryStartJump(InputState& input) override;
+	void jumpLogic() override;
+
+	bool tryStartNormalAttacks(InputState& input, float dt) override;
+	void updateAttack(float dt) override;
+	void updateAttackCooldown(float dt) override;
+
+	bool tryStartSpecial(InputState& input) override;
+	void specialAttackLogic() override;
+	void updateSpecialAttack(float dt, std::vector<Tile>& tiles) override;
+
+	bool cancelElixir();
+
+	void handleMovement(InputState& input) override;
+	
+	sf::Vector2f animationOffset() override;
+
+	void applyStun(float duration) override;
+
+	void setHealth(int newHealth);
+
+	void setHealBoolean(bool x);
+
+	bool isParryWindow() override;
+	bool isDeflectionWindow() override;
+
+	AttackHitbox* getAttackBoxTable() override;
+
+	const attackData* getAttackTable() const override;
+
+	void cancelAttack() override;
+
+	void resetCharacter(bool isSinglePlayer) override;
+
+	int determineAttackID() override;
+
+	float getGuardTimer() override;
+
+	// -------------------------------------------------------------------------------------------------------//
 
 	void drawCollisionBox(sf::RenderWindow& window) {
 
@@ -521,11 +335,11 @@ public:
 
 	void initializeSounds();
 
+	void setAttackBoolean();
+
 	void enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, std::vector<Arrow>& arrows, float dt);
 
 	void attackLogic(std::vector<std::unique_ptr<Enemy>>& enemies, float dt);
-
-	Animation* getAnimation();
 
 	void lureLogic (std::vector<std::unique_ptr<Enemy>>& enemies);
 
@@ -533,14 +347,14 @@ public:
 
 	sf::RectangleShape getKnightBox();
 
-	void climbingLogic(std::vector<Tile>& tiles);
+	void climbingLogic(std::vector<Tile>& tiles) override;
 
 	void pullUpLogic();
 
 	void musicLogic()
 	{
 
-		if (knightBox.getGlobalBounds().findIntersection(bossMusicBox.getGlobalBounds())) {
+		if (playerBox.getGlobalBounds().findIntersection(bossMusicBox.getGlobalBounds())) {
 			if (!touch) {
 				touch = true;
 				clock2.restart(); // start fade timer ONCE
@@ -561,7 +375,7 @@ public:
 			}
 		}
 
-		if (knightBox.getGlobalBounds().findIntersection(bossMusicBox2.getGlobalBounds()))
+		if (playerBox.getGlobalBounds().findIntersection(bossMusicBox2.getGlobalBounds()))
 		{
 			if (playOnce5)
 			{
@@ -573,26 +387,28 @@ public:
 
 	}
 
-	void resetKnight();
+	void resetKnight(int x);
 
 	void placeEnemies(std::vector<std::unique_ptr<Enemy>>& enemies);
 
-	int getHealth();
+	/*sf::Music music;
+	sf::Music deathMusic;*/
 
-	sf::Music music;
-	sf::Music deathMusic;
-	
-	Text healthText;
-	Text deathText;
-	Text potionNumText;
-	Text ending;
-
-	sf::Sprite healthPotion;
-
-	sf::SoundBuffer enemeyFelledBuffer;
-	sf::Sound enemeyFelledSound;
+	//sf::Sprite healthPotion;
 
 	float elasped;
+
+	bool hasBeenParried = false;
+
+	const float guardParryStart = 0.2f;
+	const float guardParryEnd = 0.45f;
+	bool parryWindowActive = false;
+
+	const float guardDeflectionStart = 0.0f;
+	const float guardDeflectionEnd = 0.8f;
+	bool deflectionWindowActive = false;
+
+	float guardTimer = 0.f;
 
 private:
 
@@ -611,117 +427,57 @@ private:
 	Animation climbing;
 	Animation roll;
 	Animation elixir;
-	Animation* currentAnimation;
+	Animation jumpAttack;
 
+	sf::CircleShape playerIdentifier;
 	
-	Direction lastDir;
+	std::string name;
+	sf::Text nameText;
+	sf::Font nameFont;
 
-	int potionNumber = 2;
+	sf::Vector2f deadlockedPosition;
 
-	bool isAttacking = false;
 	bool postAttackCooldown = false;
 	float postAttackTimer = 0.f;
-	const float attackPauseDuration = 0.15f;
-	bool isSprinting = false;
+
+	float postSprintAttackTimer = 0.f;
+	bool sprintAttackCooldown = false;
+
+	const float attackPauseDuration = 0.2f;
 	bool isSprintAttacking = false;
-	bool isGuarding = false;
 
-	int health = 100;
-	bool isDead = false;
-	bool playOnce = false;
+	bool postGuardCooldown = false;
+	float guardCooldownTimer = 1.5f;
 
-	sf::Vector2f velocity = { 0.f, 0.f };
-	const float gravity = 1200.f; 
-	const float jumpStrength = -500.f;
-	bool isJumping = false;
+	bool isJumpAttacking = false;
+	bool jumpAttackCooldown = false;
+	float jumpAttackCooldownTimer = 0.f;
+
+	bool reversePlayed = false;
+
+	float jumpAttackTimer = 0.f;
+	const float jumpAttackDuration = 0.7f; 
+
+	bool wasMousePressedLastFrame = false;
+
 	float groundY = 0.f;
-	bool isOnGround = false;
 
 	bool wasWPressedLastFrame = false;
-	bool isClimbing = false;
-
-	bool isHurt = false;
+	
 	bool knightWolfCollision = false;
-
-	bool isKnockedback = false;
-	float knockbackDuration = 0.3f;
-	float knockbackTimer = 0.f;
 
 	bool wolfRight = true;
 	bool wolfLeft = false;
 
 	bool playSoundOnce = false;
-	std::vector<Tile> decorations;
 
-	sf::RectangleShape knightBox;
-	bool blockLeft = false;
-	bool blockRight = false;
-
-	sf::RectangleShape attackBox;
-	sf::RectangleShape guardBox;
 	sf::RectangleShape rightLureBox;
 	sf::RectangleShape leftLureBox;
-	sf::RectangleShape climbingBox;
 	sf::RectangleShape bossMusicBox;
 	sf::RectangleShape bossMusicBox2;
 
-	sf::SoundBuffer walkBuffer1;
-	sf::Sound walkSound1;
-
-	sf::SoundBuffer walkBuffer2;
-	sf::Sound walkSound2;
-
-	sf::SoundBuffer attackBuffer1;
-	sf::Sound attackSound1;
-
-	sf::SoundBuffer attackBuffer2;
-	sf::Sound attackSound2;
-
-	sf::SoundBuffer attackBuffer3;
-	sf::Sound attackSound3;
-
-	sf::SoundBuffer jumpBuffer1;
-	sf::Sound jumpSound1;
-
-	sf::SoundBuffer jumpBuffer2;
-	sf::Sound jumpSound2;
-
-	sf::SoundBuffer hurtBuffer1;
-	sf::Sound hurtSound1;
-
-	sf::SoundBuffer hurtBuffer2;
-	sf::Sound hurtSound2;
-
-	sf::SoundBuffer hurtBuffer3;
-	sf::Sound hurtSound3;
-
-	sf::SoundBuffer shieldImpactBuffer1;
-	sf::Sound shieldImpactSound1;
-
-	sf::SoundBuffer shieldImpactBuffer2;
-	sf::Sound shieldImpactSound2;
-
-	sf::SoundBuffer deathBuffer1;
-	sf::Sound deathSound1;
-
-	sf::SoundBuffer hangBuffer1;
-	sf::Sound hangSound1;
-
-	sf::SoundBuffer deathBuffer2;
-	sf::Sound deathSound2;
-
 	sf::SoundBuffer dragonScreamBuffer;
 	sf::Sound dragonScreamSound;
-
-	sf::SoundBuffer potionSoundBuffer;
-	sf::Sound potionSound;
-	
-	sf::Clock walkSoundClock;
-	bool playFirstWalkSound = true;
-	sf::Time walkInterval = sf::milliseconds(400);
-
-	sf::Clock hurtSoundClock;
-	sf::Time hurtInterval = sf::milliseconds(500);
 
 	sf::Clock rollDelayClock;
 	float minRollDelay = 0.8f;
@@ -743,25 +499,7 @@ private:
 
 	bool touch = false;
 
-	bool isRolling = false;
-	bool isDrinking = false;
-
 	const float fadeDuration = 10.f; // seconds
 	const float startVolume = 100.f;
-	sf::Clock clock2;
-
-	void switchAnimation(Animation* newAnim) {
-
-		if (currentAnimation != newAnim) {
-			sf::Vector2f pos = currentAnimation->getSprite().getPosition();
-			currentAnimation = newAnim;
-			currentAnimation->getSprite().setPosition(pos);
-		}
-
-		currentAnimation->setDirection(lastDir);
-
-		
-	}
-
-	
+	sf::Clock clock2;	
 };

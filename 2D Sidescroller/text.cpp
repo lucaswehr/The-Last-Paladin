@@ -1,8 +1,7 @@
-#include "Text.hpp"
+#include "text.hpp"
 
 Text::Text(const std::string& fontPath, const std::string& title, float x, float y, sf::Color color, int size) : text(font)
 {
-
 	if (!font.openFromFile(fontPath))
 	{
 		std::cout << "Error in text constructor" << std::endl;

@@ -2,13 +2,8 @@
 
 void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies)
 {
-
- 
-
 	skeletonBox.setPosition(currentAnimation->getSprite().getPosition());
-
 	leftLureBox.setPosition(currentAnimation->getSprite().getPosition());
-
 	rightLureBox.setPosition(currentAnimation->getSprite().getPosition());
 	
 	if (health <= 0)
@@ -16,29 +11,22 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 		if (!playOnce)
 		{
 			DeathSound.play();
-
 			switchAnimation(Dead.get());
 
 			dead = true;
-
 			std::cout << "DEAD";
-
 			playOnce = true;
 
 		}
 
 		currentAnimation->getSprite().setScale({ lastDir == enemyDirection::Right ? 2.f : -2.f, 2.f });
-
 		currentAnimation->update(dt);
 
 		return;
-		
 	}
 
-
 	if (isHurt && !dead)
-	{
-	
+	{	
 		switchAnimation(Hurt.get());
 
 		this->boneCrackSound.play();
@@ -46,33 +34,21 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 		if (currentAnimation->isFinished())
 		{
 			Hurt->reset();
-
 			std::cout << "HURT" << std::endl;
-
 			health -= 20;
-
 			isHurt = false;
-		}
-
-		
+		}	
 	}
 
 	if (lastDir == enemyDirection::Right)
 	{
-		currentAnimation->getSprite().setScale({ 2,2 });
-
-		
+		currentAnimation->getSprite().setScale({ 2,2 });	
 	}
 	else if (lastDir == enemyDirection::Left)
 	{
 		currentAnimation->getSprite().setScale({ -2,2 });
 	
 	}
-
-	
-		
-
-
 
 	currentAnimation->update(dt);
 }
@@ -211,8 +187,12 @@ void Skeleton::shootArrow(std::vector<Arrow>& arrows, std::vector<Tile>& tiles, 
 			this->bowShotSound.play();
 
 			sf::Vector2f direction = (lastDir == enemyDirection::Right) ? sf::Vector2f(1, 0) : sf::Vector2f(-1, 0);
+			
+			float randomGravity = 0;
 
-			arrows.emplace_back(arrowTex, pos, direction, changedGravity);
+			randomGravity = changedGravity == 2 ? 500 + std::rand() % 400 : std::rand() % 1000 + 2000;
+
+			arrows.emplace_back(arrowTex, pos, direction, randomGravity);
 
 			arrowFired = true;
 		}

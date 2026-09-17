@@ -8,16 +8,20 @@ public:
 	sf::RectangleShape healthBar;
 	sf::RectangleShape backgroundBar;
 
-	float displayedHealth = 100.f;
+	float displayedHealth;
 
-	Healthbar(float x, float y)
+	Healthbar() = default;
+	
+	Healthbar(float barWidth, sf::Color& color, float maxHealth) 
 	{
-		healthBar.setFillColor(sf::Color::Red);
+		healthBar.setFillColor(color);
 		healthBar.setOutlineColor(sf::Color::Black);
 		healthBar.setOutlineThickness(5);
 
-		backgroundBar.setSize({ x, y });
+		backgroundBar.setSize({ barWidth, BAR_HEIGHT });
 		backgroundBar.setFillColor(sf::Color::Black);
+
+		displayedHealth = maxHealth;
 		
 	}
 	
@@ -54,4 +58,12 @@ public:
 		window.draw(healthBar);
 	}
 
+	void setBarWidth(float width)
+	{
+		backgroundBar.setSize({ width, BAR_HEIGHT });
+	}
+
+private:
+
+	float BAR_HEIGHT = 30;
 };
