@@ -20,7 +20,14 @@ void Client::createServer(const ServerInfo& info)
         << info.passwordProtected
         << info.password;
 
-    lobbySocket.send(packet);
+    std::cout << "[CLIENT] Sending CreateServer packet..."
+        << std::endl;
+
+    auto status = lobbySocket.send(packet);
+
+    std::cout << "[CLIENT] CreateServer send status: "
+        << static_cast<int>(status)
+        << std::endl;
 }
 
 void Client::sendPlayerState(int playerID, float x, float y, PlayerState state, Direction dir)
@@ -121,19 +128,43 @@ void Client::leaveLobby()
 
     gameSocket.send(leavePacket);
     gameSocket.disconnect();
+
+    hasPlayerJoined = false;
 }
 
 void Client::rebuildLobbyPlayers()
 {
-    sf::Packet packet;
+  //  sf::Packet packet;
 
     moveToServerPage = false;
 
-    packet << static_cast<int>(PacketType::RequestLobbySnapshot);
-    gameSocket.send(packet);
+    //packet << static_cast<int>(PacketType::RequestLobbySnapshot);
+   // gameSocket.send(packet);
 }
 
+void Client::playerHeartbeatLogic()
+{
+    if (!hasPlayerJoined) return;
 
+    if (clientHeartbeatClock.getElapsedTime().asSeconds() >= CLIENT_HEARTBEAT_INTERVAL)
+    {
+        std::cout << "[CLIENT] Sending PlayerHeartbeat" << std::endl;
+
+        sf::Packet hb;
+        hb << static_cast<int>(PacketType::PlayerHeartbeat);
+
+        auto status = gameSocket.send(hb);
+
+        std::cout << "[CLIENT] Player heartbeat send status: "
+            << static_cast<int>(status)
+            << std::endl;
+
+        if (status == sf::Socket::Status::Done)
+        {
+            clientHeartbeatClock.restart();
+        }
+    }
+}
 
 void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& players, float dt, std::vector<sf::Color>& playerColors, vector<sf::Vector2f> spawnpoints,
      AssetManager& assets,std::string& fonttext, CharacterType characterType, sf::Font& standardFont)
@@ -144,6 +175,8 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
         sf::Packet packet;
         auto status = gameSocket.receive(packet);
 
+        playerHeartbeatLogic();       
+
         if (status == sf::Socket::Status::Done)
         {
             int typeInt;
@@ -151,20 +184,36 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
             packet >> typeInt;
 
             PacketType type = static_cast<PacketType>(typeInt);
-
+           
             if (type == PacketType::AssignID)
             {
                 packet >> myPlayerID;
 
-                std::cout << "My ID is: " << myPlayerID << std::endl;
-                
+                std::cout << "My player ID is: "
+                    << myPlayerID
+                    << std::endl;
+
                 sf::Packet namePacket;
-
                 namePacket << static_cast<int>(PacketType::PlayerJoin) << playerName << static_cast<int>(characterType);
+                auto joinSendStatus = gameSocket.send(namePacket);
 
-                gameSocket.send(namePacket);
+                std::cout << "PlayerJoin send status: "
+                    << static_cast<int>(joinSendStatus)
+                    << std::endl;
 
+                if (joinSendStatus == sf::Socket::Status::Done)
+                {
+                    hasPlayerJoined = true;
+                    clientHeartbeatClock.restart();
+                }
+
+                sf::Packet snapshotRequest;
+                snapshotRequest << static_cast<int>(PacketType::RequestLobbySnapshot);
+                gameSocket.send(snapshotRequest);
+
+                setMovingToPreGameLobby(true);
             }
+
 
             if (type == PacketType::AssignServerID)
             {
@@ -364,6 +413,11 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
 
                 packet >> hostID;
                 packet >> count;
+                packet >> maxLobbySize;
+
+                cout << "MAX LOBBY SIZE: " << maxLobbySize << endl;
+
+                std::cout << "===== LOBBY UPDATE =====\n";
 
                 for (int i = 0; i < count; i++)
                 {
@@ -375,9 +429,7 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
 
                     CharacterType character = static_cast<CharacterType>(characterInt);
 
-                    lobbyPlayers[id] = { name, character };
-
-                    std::cout << "===== LOBBY UPDATE =====\n";
+                    lobbyPlayers[id] = { name, character };                   
 
                     for (const auto& [id, player] : lobbyPlayers)
                     {
@@ -414,9 +466,8 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
                 packet >> id;
 
                 cout << "ERASING " << lobbyPlayers[id].name << endl;
-
+             
                 lobbyPlayers.erase(id);
-
             }
 
             if (type == PacketType::Deflection)
@@ -436,6 +487,7 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
             {
                 gameSocket.disconnect();
                 this->moveToServerPage = true;
+                hasPlayerJoined = false;
             }
 
             if (type == PacketType::CountdownUpdate)
@@ -466,7 +518,7 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
 
                 winnerName = lobbyPlayers[winnerID].name;
 
-            }
+            }        
         }
         else if (status == sf::Socket::Status::NotReady)
         {
@@ -529,6 +581,16 @@ int Client::getServerID()
     return myServerID;
 }
 
+bool Client::isMovingToPreGameLobby()
+{
+    return moveToPreGameLobby;
+}
+
+void Client::setMovingToPreGameLobby(bool x)
+{
+    moveToPreGameLobby = x;
+}
+
 string Client::getWinnerName()
 {
     return winnerName;
@@ -564,13 +626,25 @@ bool Client::connectToGameServer(sf::IpAddress ip, unsigned short port)
     return true;
 }
 
-bool Client::connectToLobby(sf::IpAddress ip, unsigned short port)
+bool Client::connectToLobby(const std::string& hostname, unsigned short port)
 {
     lobbySocket.setBlocking(true);
 
-    std::cout << "Trying to connect to " << ip.toString() << ":" << port << std::endl;
+    auto ip = sf::IpAddress::resolve(hostname);
 
-    if (lobbySocket.connect(ip, port) != sf::Socket::Status::Done)
+    if (!ip)
+    {
+        std::cout << "Failed to resolve lobby address\n";
+        return false;
+    }
+
+    std::cout << "Trying to connect to "
+        << ip->toString()
+        << ":"
+        << port
+        << std::endl;
+
+    if (lobbySocket.connect(*ip, port) != sf::Socket::Status::Done)
     {
         std::cout << "Lobby Connection failed\n";
         return false;
@@ -612,6 +686,10 @@ void Client::updateLobby()
             int count;
             packet >> count;
 
+            std::cout << "Server count received: "
+                << count
+                << std::endl;
+
             for (int i = 0; i < count; i++)
             {
                 ServerInfo server;
@@ -631,6 +709,37 @@ void Client::updateLobby()
 
                 std::cout << server.name << " (" << server.currentPlayers << "/" << server.maxPlayers << ")\n";
             }
+        }
+        else if (type == PacketType::ServerReady)
+        {
+            int serverID;
+            std::string serverIP;
+            unsigned short serverPort;
+
+            packet >> serverID
+                >> serverIP
+                >> serverPort;
+
+            std::cout << "Game server ready!" << std::endl;
+            std::cout << "Server ID: " << serverID << std::endl;
+            std::cout << "IP: " << serverIP << std::endl;
+            std::cout << "Port: " << serverPort << std::endl;
+
+            auto resolvedIP = sf::IpAddress::resolve(serverIP);
+
+            if (!resolvedIP)
+            {
+                std::cout << "Failed to resolve game server IP\n";
+                return;
+            }
+         
+            if (!connectToGameServer(resolvedIP.value(), serverPort))
+            {
+                std::cout << "Failed to connect to game server\n";
+                return;
+            }
+
+            std::cout << "Connected to game server!" << std::endl;               
         }
 
         packet.clear();

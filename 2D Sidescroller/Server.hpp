@@ -15,6 +15,11 @@ public:
         this->port = port;
     }
 
+    void initializeServerInfo(ServerInfo& info)
+    {
+        serverInfo = info;
+    }
+
     void relayPacketToClientsExceptMe(sf::Packet relayPacket, int index)
     {
         for (size_t j = 0; j < clients.size(); j++)
@@ -57,10 +62,61 @@ public:
                     << serverID
                     << static_cast<int>(clients.size()); // current players
 
-                lobbySocket.send(hbPacket); // send to lobby
+                auto status = lobbySocket.send(hbPacket);
+
+                if (status == sf::Socket::Status::NotReady)
+                {
+                    std::cout << "HEARTBEAT NOT SENT (send buffer full), will retry next tick\n";
+                    return; // don't restart clock, retry immediately next call
+                }
+                else if (status == sf::Socket::Status::Disconnected || status == sf::Socket::Status::Error)
+                {
+                    std::cout << "HEARTBEAT FAILED — lobby connection dead, attempting reconnect\n";
+                    lobbySocket.disconnect();
+                    serverID = -1; // no longer valid, lobby forgot us
+
+                    connectToLobby(lobbyHostname, lobbyPortStored);
+                    createServer(serverInfo); // lobby lost all state on its restart, must re-register from scratch
+                }
+                else if (status == sf::Socket::Status::Done)
+                {
+                    std::cout << "HEARTBEAT SENT OK - serverID: "
+                        << serverID
+                        << std::endl;
+                }
             }
 
             heartbeatClock.restart();
+        }
+    }
+
+    void playerHeartbeatLogic(const float CLIENT_TIMEOUT)
+    {
+        for (size_t i = 0; i < clients.size(); )
+        {
+            auto* rawPtr = clients[i].get();
+
+            if (lastActivity.count(rawPtr))
+            {
+                float elapsed =
+                    lastActivity[rawPtr].getElapsedTime().asSeconds();
+
+                if (elapsed > CLIENT_TIMEOUT)
+                {
+                    std::cout << "Client "
+                        << socketToPlayerID[rawPtr]
+                        << " timed out after "
+                            << elapsed
+                            << " seconds\n";
+
+                        removePlayer(rawPtr);
+                        lastActivity.erase(rawPtr);
+
+                        continue;
+                }
+            }
+
+            i++;
         }
     }
 
@@ -156,15 +212,32 @@ public:
 
     void createServer(const ServerInfo& info)
     {
+        serverInfo = info;
+
         sf::Packet packet;
 
         packet << static_cast<int>(PacketType::CreateServer) << info.name << info.port << info.maxPlayers << info.passwordProtected << info.password;
 
-        this->lobbySocket.send(packet);
+        auto status = this->lobbySocket.send(packet);
+
+        if (status != sf::Socket::Status::Done)
+        {
+            std::cout << "Failed to send CreateServer packet to lobby\n";
+        }
+        else
+        {
+            std::cout << "CreateServer packet sent to lobby\n";
+        }
+
+        sf::sleep(sf::milliseconds(100));
     }
 
     void connectToLobby(const std::string& hostname, unsigned short port)
     {
+        std::cout << "Connecting to lobby..." << std::endl;
+        lobbyHostname = hostname;
+        lobbyPortStored = port;
+
         auto ip = sf::IpAddress::resolve(hostname);
 
         if (!ip)
@@ -178,6 +251,8 @@ public:
             std::cout << "Failed to connect to lobby\n";
             return;
         }
+
+        std::cout << "Connected to lobby!" << std::endl;
     }
 
     void broadcastLobby()
@@ -186,11 +261,12 @@ public:
         packet << static_cast<int>(PacketType::LobbyUpdate);
         packet << hostID;
         packet << static_cast<int>(lobbyPlayers.size());
+        packet << serverInfo.maxPlayers;
 
         for (auto& [id, item] : lobbyPlayers)
         {
             packet << id << item.name << static_cast<int>(item.character);
-        }
+        }       
 
         for (auto& client : clients)
         {
@@ -249,16 +325,32 @@ public:
         broadcastLobby();
     }
 
+    void setServerID(int id)
+    {
+        serverID = id;
+        std::cout << "Server ID set to: " << serverID << std::endl;
+    }
+
     void runRelayServer()
     {
-        listener.listen(port);
+        auto status = listener.listen(port);
+
+        if (status != sf::Socket::Status::Done)
+        {
+            cout << "Failed to bind listener socket to port "
+                << port << endl;
+            return;
+        }
+
         lobbySocket.setBlocking(false);
         listener.setBlocking(false);
 
-        cout << "Server listening on port 54000" << endl;
+        cout << "Server listening on port "
+            << port << endl;
 
         sf::Clock heartbeatClock;
-        const float HEARTBEAT_INTERVAL = 3.f;
+        const float HEARTBEAT_INTERVAL = 2.f;
+        const float CLIENT_TIMEOUT = 8.f; // tune vs your client's heartbeat interval
 
         while (running) // main server loop
         {
@@ -284,50 +376,111 @@ public:
             //---------------------------------------------------------------------------//
             
             // Server connects with7 up to 4 players
-            if (clients.size() < 4)
+            if (clients.size() + pendingPlayers.size() < 4)
             {
-                std::unique_ptr<sf::TcpSocket> newClient = std::make_unique<sf::TcpSocket>();
+                auto newClient = std::make_unique<sf::TcpSocket>();
 
                 if (listener.accept(*newClient) == sf::Socket::Status::Done)
                 {
                     int playerID = assignPlayerID();
-                    lobbyPlayers[playerID] = { "" , CharacterType::Unknown};
-                
                     socketToPlayerID[newClient.get()] = playerID;
-
-                    if (hostID == -1)
-                    {
-                        hostID = playerID;
-                    }
-
-                    cout << "Player " << playerID << " connected\n";
 
                     sf::Packet idPacket;
                     idPacket << static_cast<int>(PacketType::AssignID) << playerID;
-
                     newClient->send(idPacket);
 
                     sf::Packet serverIDPacket;
                     serverIDPacket << static_cast<int>(PacketType::AssignServerID) << serverID;
-
                     newClient->send(serverIDPacket);
 
                     newClient->setBlocking(false);
-                 
-                    clients.push_back(std::move(newClient));
+
+                    // Not a real player yet — no hostID, no log, no lobbyPlayers entry
+                    pendingPlayers.push_back({ std::move(newClient), playerID, sf::Clock() });
                 }
             }
 
+            for (auto it = pendingPlayers.begin(); it != pendingPlayers.end(); )
+            {
+                sf::Packet packet;
+                auto status = it->sock->receive(packet);               
+
+                if (status == sf::Socket::Status::Done)
+                {
+                    int typeInt;
+                    packet >> typeInt;
+                    PacketType type = static_cast<PacketType>(typeInt);                  
+
+                    if (type == PacketType::PlayerJoin)
+                    {
+                        std::string name;
+                        int characterType;
+                        packet >> name >> characterType;
+                        CharacterType character = static_cast<CharacterType>(characterType);
+
+                        lobbyPlayers[it->playerID] = { name, character };
+
+                        if (hostID == -1)
+                        {
+                            hostID = it->playerID;
+                            cout << "HOST IS " << lobbyPlayers[it->playerID].name << endl;
+                        }
+
+                        cout << "Player " << it->playerID << " connected\n";
+
+                        clients.push_back(std::move(it->sock));
+                        lastActivity[clients.back().get()] = sf::Clock(); // starts fresh now that they're real
+                        broadcastLobby();
+
+                        it = pendingPlayers.erase(it);
+                    }
+                    else
+                    {        
+                        if (type == PacketType::PlayerHeartbeat)
+                        {
+                            ++it; // heartbeat arrived early — harmless, keep waiting for the real join
+                            continue;
+                        }
+
+                        std::cout << "Pending socket sent unexpected packet type: " << typeInt
+                            << " (expected PlayerJoin = " << static_cast<int>(PacketType::PlayerJoin) << ")\n";
+
+                        availableIDs.insert(it->playerID);
+                        socketToPlayerID.erase(it->sock.get());
+                        it = pendingPlayers.erase(it);
+                    }
+                }
+                else if (status == sf::Socket::Status::Disconnected)
+                {
+                    // Probe, or a client that connected then bailed
+                    availableIDs.insert(it->playerID);
+                    socketToPlayerID.erase(it->sock.get());
+                    it = pendingPlayers.erase(it);
+                }
+                else if (it->age.getElapsedTime().asSeconds() > 50.f)
+                {
+                    cout << "Took longer than 50 seconds, deleting" << endl;
+                    availableIDs.insert(it->playerID);
+                    socketToPlayerID.erase(it->sock.get());
+                    it = pendingPlayers.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        
                 // Packets are sent to every other player. Ex.) Player 2 moves, server sends movement to Players 0,1,3
                 for (size_t i = 0; i < clients.size(); i++)
                 {
                     sf::Packet packet;  
 
                     sf::Socket::Status status = clients[i]->receive(packet);
-
+                  
                     if (status == sf::Socket::Status::Done)
                     {
                         sf::Packet relayPacket = packet;
+                        lastActivity[clients[i].get()].restart(); // any packet proves liveness
 
                         int typeInt;
                         packet >> typeInt;
@@ -411,60 +564,9 @@ public:
                             continue;
                         }
                         else if  (type == PacketType::RequestLobbySnapshot)
-                        {
-                            sf::Packet snapshot;
-                            snapshot << static_cast<int>(PacketType::LobbyUpdate) << lobbyPlayers.size();
-
-                            cout << "SIZE OF LOBBY: " << lobbyPlayers.size() << endl;
-
-                            for (auto& [id, player] : lobbyPlayers) {
-                                snapshot << id << player.name;
-                            }
-                           
-                            for (auto& client : clients)
-                            {
-                                client->send(snapshot);
-                            }
-                        }
-                        else if (type == PacketType::ServerDelete)
-                        {
-                            int playerID = socketToPlayerID[clients[i].get()];
-                                
-                            if (playerID != hostID)
-                            {
-                                cout << "Non-Host tried to delete server" << endl;
-                                continue;
-                            }
-
-                            cout << "Host Deleting Server..." << endl;
-
-                            sf::Packet shutdown;
-
-                            shutdown << static_cast<int>(PacketType::ClientDisconnect);
-
-                            for (auto& client : clients)
-                            {                             
-                                client->send(shutdown); // disconnect the gamesocket that each client is connected to
-
-                                // gracefully shutdown each client, this needs to be here before clients.clear() 
-                                // because cleints.clear() just kills the vector<Tcp*socket> object without properly closign the tcp connections
-                                client->disconnect(); 
-                            }
-
-                            // Remove everything that had players and IDs inside of them
-                            clients.clear();
-                            lobbyPlayers.clear();
-                            socketToPlayerID.clear();
-
-                            sf::Packet packet;
-
-                            packet << static_cast<int>(PacketType::ServerDelete) << serverID;
-
-                            lobbySocket.send(packet); 
-
-                            running = false; // stop the server loop
-                            break;
-                        }
+                        {                        
+                            broadcastLobby();
+                        }                      
                         else if (type == PacketType::Death)
                         {
                             int id = 0;
@@ -497,6 +599,10 @@ public:
                                
                             broadcastLobby();                        
                         }
+                        else if (type == PacketType::PlayerHeartbeat)
+                        {                           
+                            lastActivity[clients[i].get()].restart();
+                        }
                         else
                         {
                             relayPacketToClientsExceptMe(relayPacket, i);                          
@@ -504,9 +610,10 @@ public:
                     }
                     else if (status == sf::Socket::Status::Disconnected)
                     {
-                        cout << "Client disconnected unexpectedly" << endl;                        
+                        cout << "Client disconnected unexpectedly" << endl;
 
-                        int playerID = socketToPlayerID[clients[i].get()];
+                        auto* rawPtr = clients[i].get();
+                        int playerID = socketToPlayerID[rawPtr];
 
                         if (countdownStarted || countdownActive)
                         {
@@ -514,19 +621,17 @@ public:
                         }
                         else
                         {
-
                             gameWinnerLogic(playerID);
 
                             sf::Packet death;
                             death << static_cast<int>(PacketType::Death) << playerID;
 
                             for (auto& client : clients)
-                            {
                                 client->send(death);
-                            }                           
                         }
 
-                        removePlayer(clients[i].get());
+                        removePlayer(rawPtr);
+                        lastActivity.erase(rawPtr);
 
                         continue;
                     }
@@ -538,6 +643,8 @@ public:
                  heartBeatLogic(heartbeatClock, HEARTBEAT_INTERVAL);
                 //---------------------------------------------------------------------------//
 
+                 playerHeartbeatLogic(CLIENT_TIMEOUT);
+
                 // inside main server loop
                 if (countdownStarted) // pause phase
                 {
@@ -547,8 +654,9 @@ public:
                         countdownStarted = false;
                         countdownActive = true; // countdown begins
                     }
-                }
+                }           
 
+               
 
                 if (countdownActive) countdownLogic();
                
@@ -572,6 +680,7 @@ private:
     std::unordered_map<sf::TcpSocket*, int> socketToPlayerID;
     std::vector<int> pendingDisconnects;
     std::set<int> availableIDs;
+    std::unordered_map<sf::TcpSocket*, sf::Clock> lastActivity;
 
     int nextPlayerID = 0;
     int serverID = -1;
@@ -586,6 +695,15 @@ private:
 
     bool gameStarted = false;
 
-    /*void acceptPlayers();
-    void handleGame();*/
+    std::string lobbyHostname;
+    unsigned short lobbyPortStored;
+    ServerInfo serverInfo; // store a copy so heartBeatLogic can re-register
+
+    struct PendingPlayer {
+        std::unique_ptr<sf::TcpSocket> sock;
+        int playerID;
+        sf::Clock age;
+    };
+
+    std::vector<PendingPlayer> pendingPlayers;
 };

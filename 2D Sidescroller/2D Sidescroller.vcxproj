@@ -149,8 +149,6 @@
     <ClCompile Include="Knight.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="LobbyClient.cpp" />
-    <ClCompile Include="LobbyServer.cpp" />
-    <ClCompile Include="lobby_main.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParryDemo.cpp" />
     <ClCompile Include="Player.cpp" />

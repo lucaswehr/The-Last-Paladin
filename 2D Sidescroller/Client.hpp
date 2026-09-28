@@ -27,7 +27,7 @@ public:
     Client() = default;
   
     bool connectToGameServer(sf::IpAddress ip, unsigned short port);
-    bool connectToLobby(sf::IpAddress ip, unsigned short port);
+    bool connectToLobby(const std::string& hostname, unsigned short port);
     void runClientServer();
     void requestServerList();
     void updateLobby();
@@ -47,6 +47,7 @@ public:
 
     void leaveLobby();
     void rebuildLobbyPlayers();
+    void playerHeartbeatLogic();
 
     void receiveNetworkEvent(std::unordered_map<int, std::unique_ptr<Player>>& players, float dt, std::vector<sf::Color>& playerColors, vector<sf::Vector2f> spawnpoints,
        AssetManager& assets,std::string& fonttext, CharacterType type, sf::Font& standardFont);
@@ -61,8 +62,12 @@ public:
     bool gameEnded();
     void setGameEnded(bool x);
     int getServerID();
+    bool isMovingToPreGameLobby();
+    void setMovingToPreGameLobby(bool x);
 
     string getWinnerName();
+
+
 
     void setCharacterType(CharacterType type);
 
@@ -90,10 +95,16 @@ private:
 
     bool startLoading = false;
     bool moveToServerPage = false;
+    bool moveToPreGameLobby = false;
 
     CharacterType characterType;
 
     string winnerName;
+
+    sf::Clock clientHeartbeatClock;
+    const float CLIENT_HEARTBEAT_INTERVAL = 2.f;
+
+    bool hasPlayerJoined = false;
     
    /* void sendInput();
     void receiveState();*/

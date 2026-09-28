@@ -6,6 +6,7 @@ RUN apt-get update && \
     g++ \
     cmake \
     git \
+    libcurl4-openssl-dev \
     libx11-dev \
     libxrandr-dev \
     libxcursor-dev \
@@ -78,7 +79,8 @@ RUN g++ -std=c++17 \
     -lsfml-window \
     -lsfml-audio \
     -lsfml-network \
-    -lsfml-system
+    -lsfml-system \
+    -lcurl
 
 # 10. Run the server
 CMD ["./game_server", "server"]

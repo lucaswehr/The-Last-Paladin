@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "Animation.hpp"
 #include "Knight.hpp"
 #include "Tile.hpp"
@@ -24,10 +25,9 @@
 #include "DeflectionDemo.hpp"
 #include "ParryDemo.hpp"
 #include <thread>
-#include <cstdlib>
 #include <ctime>
 #include <atomic>
-
+#include <cstdlib>
 
 enum class GameState
 {
@@ -45,6 +45,7 @@ enum class GameState
     characterSelect,
     joinServer,
     createServer,
+    creatingServerLoadingScreen,
     serverPage,
     enterPassword,
     loading,
@@ -85,41 +86,55 @@ struct ServerEntryUI
     }
 };
 
+std::string getEnvOrDefault(const char* key, const std::string& fallback)
+{
+    const char* val = std::getenv(key);
+    return val ? std::string(val) : fallback;
+}
+
 int main(int argc, char** argv)
 {
-
     //// ---------------------NETWORKING--------------------------//
 
         Client client;
         sf::IpAddress Ip(127,0,0,1); // My IP
       
         srand(static_cast<unsigned>(time(nullptr)));
-        unsigned short gamePort = 54000 + (rand() % 1000);
-     
+
+        unsigned short gamePort = 54000; 
         unsigned short lobbyPort = 54001;  
 
       
-        if (argc > 1 && std::string(argv[1]) == "lobby")
+      /*  if (argc > 1 && std::string(argv[1]) == "lobby")
         {
             LobbyServer lobby;
             lobby.start(lobbyPort);
             return 0;
-        }
-        else if (argc > 1 && std::string(argv[1]) == "server")
+        }*/
+        if (argc > 1 && std::string(argv[1]) == "server")
         {
             ServerInfo info;
 
-            info.name = "Test Server";
-            info.port = 54000;
-            info.maxPlayers = 3;
-            info.passwordProtected = true;
-            info.password = "test";
+            info.name = getEnvOrDefault("SERVER_NAME", "Test Server");
+            info.port = static_cast<unsigned short>(std::stoi(getEnvOrDefault("SERVER_PORT", "54000")));
+            info.maxPlayers = std::stoi(getEnvOrDefault("SERVER_MAX_PLAYERS", "2"));
+            info.passwordProtected = getEnvOrDefault("SERVER_PASSWORD_PROTECTED", "0") == "1";
+            info.password = getEnvOrDefault("SERVER_PASSWORD", "");
+
+            int assignedServerID = std::stoi(getEnvOrDefault("SERVER_ID", "-1"));
+
+            std::string lobbyHost = getEnvOrDefault("LOBBY_HOST", "last-paladin-lobby-lucas.westus.azurecontainer.io");
 
             Server server(info.port);
 
-            server.connectToLobby("lobby", lobbyPort);
-            server.createServer(info);
+            cout << "Starting server: " << info.name << " on port " << info.port << " Assigned ID: "  << assignedServerID << endl;
+            server.connectToLobby(lobbyHost, lobbyPort);
+            server.setServerID(assignedServerID);
 
+            if (assignedServerID == -1)
+                std::cout << "WARNING: No SERVER_ID provided — heartbeats will not be sent.\n";
+            
+            server.initializeServerInfo(info);
             server.runRelayServer();
         }
       
@@ -250,6 +265,8 @@ int main(int argc, char** argv)
     Text knightText(fancyFontText, "Paladin", 570.f, 725.f, sf::Color::White,70);
     Text samuraiText(fancyFontText, "Samurai",1100.f, 725.f, sf::Color::White, 70);
     Text howToPlayCharacterSelect(fancyFontText, "How To Play", 1375.f, 925.f, sf::Color::White, 90);
+
+    Text serverLoading(fancyFontText, "Creating Server...", 350.f, 400.f, sf::Color::White, 200);
 
     DebugOverlay debug(font);
 
@@ -731,6 +748,7 @@ int main(int argc, char** argv)
         //     moving the object usual;y broke that memory
     //----------------------------------------------------------------------------------------------------------------------------------------------//
     CharacterType characterType;
+    CharacterType initialCharacterType; // the very first character picked, before ever joining a server
 
     sf::Color samuraiColor = sf::Color::Blue;
 
@@ -1325,7 +1343,8 @@ int main(int argc, char** argv)
                             if (Continue.getBounds().contains(mousePos))
                             {
                                 menuClickSound.play();
-                                client.connectToLobby(Ip, lobbyPort); // Connect to lobby first to be able to use lobbysocket for requestServerList and other things
+                                cout << "CONNECTING FROM ENTER USERNAME INSTANCE OF CONNECT TO LOBBY" << endl;
+                                client.connectToLobby("last-paladin-lobby-lucas.westus.azurecontainer.io", lobbyPort); // Connect to lobby first to be able to use lobbysocket for requestServerList and other things
                                 client.setPlayerName(nametag.str); // Set your player name to the one from the username textbox
                                 gameState = GameState::characterSelect;
                                 clickConsumed = true;
@@ -1350,7 +1369,11 @@ int main(int argc, char** argv)
                             else if (knightButton.getGlobalBounds().contains(mousePos))
                             {
                                 menuClickSound.play();
-                                characterType = CharacterType::Knight;
+                                characterType = CharacterType::Knight;                               
+
+                                if (!pressedLobbyCharacterSelectButton)
+                                    initialCharacterType = CharacterType::Knight;
+
                                 gameState = changePage;
                                 clickConsumed = true;
                                 characterSelected = true;
@@ -1359,6 +1382,10 @@ int main(int argc, char** argv)
                             {
                                 menuClickSound.play();
                                 characterType = CharacterType::Samurai;
+
+                                if (!pressedLobbyCharacterSelectButton)
+                                    initialCharacterType = CharacterType::Samurai; 
+
                                 gameState = changePage;
                                 clickConsumed = true;
                                 characterSelected = true;
@@ -1431,7 +1458,7 @@ int main(int argc, char** argv)
 
                                     client.maxLobbySize = server.maxPlayers;
 
-                                    client.connectToGameServer(Ip, 54000); // Connect to game server when lobby is clicked on
+                                    client.connectToGameServer(server.ip, server.port); // Connect to game server when lobby is clicked on
                                     client.rebuildLobbyPlayers();
                                     gameState = GameState::preGameLobby;
                                     break;
@@ -1478,7 +1505,7 @@ int main(int argc, char** argv)
 
                                     client.maxLobbySize = server.maxPlayers;                                   
 
-                                    client.connectToGameServer(Ip, 54000); // Connect to game server when lobby is clicked on
+                                    client.connectToGameServer(server.ip, server.port); // Connect to game server when lobby is clicked on
                                     client.rebuildLobbyPlayers();
 
                                     cout << "CONNECTING TO "
@@ -1524,24 +1551,18 @@ int main(int argc, char** argv)
                             menuClickSound.play();
                             serverLaunched = true;
 
-                            ServerInfo info = extractServerInfoFromUI(serverNameBox, passwordBox, maxPlayers, gamePort, Ip);
+                            ServerInfo info = extractServerInfoFromUI(serverNameBox, passwordBox, maxPlayers, gamePort);
+
+                            std::cout << "MAX PLAYERS BEFORE CREATE: "
+                                << info.maxPlayers
+                                << std::endl;
+
+
                             client.createServer(info);
 
-                            //std::thread([Ip, lobbyPort, gamePort, info, &serverReady]() // Allows the computer to run the network loop indenpendently of the main loop
-                            //    {
-                            //        Server server(gamePort);
-                            //        server.connectToLobby(Ip, lobbyPort);                                 
-                            //        server.createServer(info);
-                            //        serverReady = true;
-                            //        server.runRelayServer();
-                            //    }).detach(); // deatch allows the thread to execute without depending on any other loop or thread. It continues
-                            //// working in the background forever      
+                            gameState = GameState::creatingServerLoadingScreen;
 
-                           /* client.connectToGameServer(Ip, 54000);
-
-                            client.maxLobbySize = 2;*/
-
-                            gameState = GameState::preGameLobby;
+                            
                         }
 
                         break;
@@ -1567,6 +1588,8 @@ int main(int argc, char** argv)
 
                             client.leaveLobby();
                             client.rebuildLobbyPlayers();
+
+                            characterType = initialCharacterType;
 
                             gameState = GameState::serverPage;
                         }
@@ -2394,7 +2417,7 @@ int main(int argc, char** argv)
             case GameState::battleMode:
             {            
 
-                debug.clear();
+                /*debug.clear();
 
                 debug.addLine("State: ", players.at(myID)->stateToString(players.at(myID)->getState()));
                 debug.addLine("Attack Timer: ", std::to_string(players.at(myID)->getAttackTimer()));
@@ -2404,7 +2427,7 @@ int main(int argc, char** argv)
                 debug.addBool("Hitbox Active: ", players.at(myID)->isHitboxActive());
                 debug.addBool("Dead: ", players.at(myID)->isDeadBool());
                 debug.addBool("Grounded: ", players.at(myID)->isGrounded());             
-                debug.addBool("Parry Window: ", players.at(myID)->isParryWindow());
+                debug.addBool("Parry Window: ", players.at(myID)->isParryWindow());*/
               
                 spawnY = 100.f;              
 
@@ -2855,8 +2878,6 @@ int main(int argc, char** argv)
             }
             case GameState::joinServer:
             {
-
-
                 if (Back.getBounds().contains(mousePos))
                 {
                     window.setMouseCursor(CursorHand);
@@ -3109,6 +3130,24 @@ int main(int argc, char** argv)
 
                 break;
             }
+            case GameState::creatingServerLoadingScreen:
+            {
+                client.updateLobby();
+                client.receiveNetworkEvent(players, deltaTime, playerColors, spawnpoints, assets, fancyFontText, characterType, standardFont);
+
+                if (client.isMovingToPreGameLobby())
+                {
+                    serverLaunched = false;
+                    gameState = GameState::preGameLobby;
+                    client.requestServerList();
+                    client.setMovingToPreGameLobby(false);
+                }
+
+                window.draw(loadingBackgroundShape);
+                serverLoading.draw(window);
+               
+                break;
+            }
             case GameState::preGameLobby:
             {               
                 
@@ -3141,7 +3180,8 @@ int main(int argc, char** argv)
                     pressedLobbyCharacterSelectButton = false;
                 }
 
-                client.receiveNetworkEvent(players, deltaTime, playerColors, spawnpoints, assets, fancyFontText, characterType, standardFont);             
+                client.receiveNetworkEvent(players, deltaTime, playerColors, spawnpoints, assets, fancyFontText, characterType, standardFont);   
+                client.rebuildLobbyPlayers();
 
                 float x = 500.f;                
                 int i = 0;
@@ -3168,7 +3208,7 @@ int main(int argc, char** argv)
                 {
                     for (auto& server : client.getServerList())
                     {
-                        if (server.id == client.getServerID())
+                        if (server.id == client.getServerID() && server.passwordProtected)
                         {
                             text4.setString("Password: " + server.password);
                         }

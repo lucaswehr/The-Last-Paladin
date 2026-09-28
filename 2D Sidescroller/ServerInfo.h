@@ -8,6 +8,7 @@ struct ServerInfo
     std::string name;
     std::string playerName;
     sf::IpAddress ip = sf::IpAddress::Any;
+    std::string publicIP;
     unsigned short port;
 
     int currentPlayers;
@@ -17,4 +18,6 @@ struct ServerInfo
     std::string password;
 
     sf::Clock heartBeat; // If server doesnt respond for around 5 seconds, delete server (Prevents server still up if host crashes_
+    sf::Clock emptyClock;
+    bool isEmpty;
 };
