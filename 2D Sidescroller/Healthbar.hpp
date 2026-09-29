@@ -12,17 +12,17 @@ public:
 
 	Healthbar() = default;
 	
-	Healthbar(float barWidth, sf::Color& color, float maxHealth) 
+	Healthbar(float barWidth, const sf::Color& color, float maxHealth, float barHeight) 
 	{
 		healthBar.setFillColor(color);
 		healthBar.setOutlineColor(sf::Color::Black);
 		healthBar.setOutlineThickness(5);
 
-		backgroundBar.setSize({ barWidth, BAR_HEIGHT });
+		backgroundBar.setSize({ barWidth, barHeight });
 		backgroundBar.setFillColor(sf::Color::Black);
 
 		displayedHealth = maxHealth;
-		
+		BAR_HEIGHT = barHeight;
 	}
 	
 	void update(float deltaTime, float actualHealth, float maxHealth, float posX, float posY)
@@ -44,12 +44,10 @@ public:
 		float ratio = displayedHealth / maxHealth;
 		ratio = std::clamp(ratio, 0.f, 1.f);
 
-
 		float newWidth = backgroundBar.getSize().x * ratio;
 		healthBar.setSize({ newWidth, backgroundBar.getSize().y });
 		healthBar.setPosition({posX,posY});
 		backgroundBar.setPosition({posX,posY});
-
 	}
 	
 	void draw(sf::RenderWindow& window)

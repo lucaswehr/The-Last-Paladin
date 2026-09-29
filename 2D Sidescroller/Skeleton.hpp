@@ -11,6 +11,7 @@ class Skeleton : public Enemy
 public:
 
 	Skeleton(sf::Texture& idleTexture, sf::Texture& shot1Texture, sf::Texture& arrowTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, float x, float y, int arrowGravityLevel) :
+		Enemy(maxHealth),
 		arrowTex(arrowTexture),
 		bowShotSound(bowShotBuffer),
 		bowPullbackSound(bowPullbackBuffer),
@@ -125,21 +126,15 @@ public:
 private:
 
 	std::unique_ptr<Animation> Idle;
-
 	std::unique_ptr<Animation> Shot1;
-
 	std::unique_ptr<Animation> Hurt;
-
 	std::unique_ptr<Animation> Dead;
 
 	Animation* currentAnimation;
 
 	sf::RectangleShape skeletonBox;
-
 	sf::RectangleShape leftLureBox;
-
 	sf::RectangleShape rightLureBox;
-
 	sf::Texture& arrowTex;
 
 	enemyDirection lastDir;
@@ -156,23 +151,16 @@ private:
 	sf::SoundBuffer DeathBuffer;
 	sf::Sound DeathSound;
 
-
 	bool leftLure = false;
-
 	bool rightLure = true;
 
 	int health = 60;
-
+	int maxHealth = 60;
 	bool dead = false;
-
 	bool isHurt = false;
-
 	bool arrowFired = false;
-
 	bool playOnce = false;
-
 	bool playSoundOnce = false;
-
 	int changedGravity = 0.f;
 
 	void switchAnimation(Animation* newAnim) {

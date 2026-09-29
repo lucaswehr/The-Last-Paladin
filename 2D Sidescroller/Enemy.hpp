@@ -2,7 +2,7 @@
 #include <memory>
 #include "Animation.hpp"
 #include "Tile.hpp"
-//#include "wolf.hpp"
+#include "Healthbar.hpp"
 
 enum class enemyDirection {
 	Left,
@@ -12,6 +12,10 @@ enum class enemyDirection {
 class Enemy
 {
 public:
+
+	Enemy(int maxHealth) :
+	 healthbar(100, sf::Color(170, 20, 20), maxHealth, 5)
+	{}
 
 	virtual void update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies) = 0;
 	virtual void draw(sf::RenderWindow& window) = 0;
@@ -35,5 +39,8 @@ public:
 	virtual sf::FloatRect getEnemyLeftLure() = 0;
 	virtual bool setInitializerBox(bool value) = 0;
 	virtual sf::FloatRect getIninitializerBox() = 0;
+
+protected:
+	Healthbar healthbar;
 
 };

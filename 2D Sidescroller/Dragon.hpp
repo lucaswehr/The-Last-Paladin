@@ -10,6 +10,7 @@ class Dragon : public Enemy
 public:
 
 	Dragon(sf::Texture& idleTexture, sf::Texture& walkTexture, sf::Texture& attack2Texture, sf::Texture& dragonRiseTexture, sf::Texture& dragonFlightTexture, sf::Texture& dragonSpecialTexture, sf::Texture& dragonLandingTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, std::string& fontText, float x, float y, sf::Color& color) :
+		Enemy(maxHealth),
 		dragonHurtSound(dragonHurtBuffer),
 		dragonHurtSound2(dragonHurtBuffer2),
 		dragonHurtSound3(dragonHurtBuffer3),
@@ -21,7 +22,7 @@ public:
 		dragonFireSpecialSound(dragonFireSpecialBuffer),
 		dragonLandSound(dragonLandBuffer),
 		dragonScreamSound(dragonScreamBuffer),
-		dragonBar(1000,color,200),
+		dragonBar(1000,color,200,30),
 		name(fontText, "Ploopwing", 840, 800.f, sf::Color::White, 40)
 
 	{

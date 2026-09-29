@@ -41,7 +41,7 @@ public:
         jumpStrength(jumpStrength),
         gravity(gravity), 
         knockbackDistance(knockbackDistance),
-        healthbar(300,color, maxHealth),
+        healthbar(300,color, maxHealth,30),
         walkSound1(walkBuffer1),
         walkSound2(walkBuffer2),
         jumpSound1(jumpBuffer1),

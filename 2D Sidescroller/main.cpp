@@ -2097,6 +2097,12 @@ int main(int argc, char** argv)
             }
             case GameState::howtoPlay:
             {
+                if (client.loadingStarted())
+                {
+                    menuMusic.stop();
+                    gameState = GameState::loading;
+                    loadingClock.restart();
+                }
 
                 if (Menu.getBounds().contains(mousePos))
                 {
@@ -2164,6 +2170,13 @@ int main(int argc, char** argv)
             }
             case GameState::howToPlay2:
             {
+                if (client.loadingStarted())
+                {
+                    menuMusic.stop();
+                    gameState = GameState::loading;
+                    loadingClock.restart();
+                }
+
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2234,6 +2247,13 @@ int main(int argc, char** argv)
             }
             case GameState::howToPlay3:
             {
+                if (client.loadingStarted())
+                {
+                    menuMusic.stop();
+                    gameState = GameState::loading;
+                    loadingClock.restart();
+                }
+
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2311,6 +2331,13 @@ int main(int argc, char** argv)
             }
             case GameState::specialInteractions:
             {
+                if (client.loadingStarted())
+                {
+                    menuMusic.stop();
+                    gameState = GameState::loading;
+                    loadingClock.restart();
+                }
+
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2373,6 +2400,13 @@ int main(int argc, char** argv)
             }
             case GameState::specialInteractions2:
             {
+                if (client.loadingStarted())
+                {
+                    menuMusic.stop();
+                    gameState = GameState::loading;
+                    loadingClock.restart();
+                }
+
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2799,6 +2833,13 @@ int main(int argc, char** argv)
                            
                 if (pressedLobbyCharacterSelectButton)
                 {
+                    if (client.loadingStarted())
+                    {
+                        menuMusic.stop();
+                        gameState = GameState::loading;
+                        loadingClock.restart();
+                    }
+
                     window.draw(statsBanner1);
                     window.draw(statsBanner2);
                     window.draw(statsBanner3);

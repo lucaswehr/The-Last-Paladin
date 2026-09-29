@@ -15,6 +15,7 @@ void Samurai::draw(sf::RenderWindow& window)
 	}
 
 	window.draw(currentAnimation->getSprite());
+
 	//window.draw(attackBox);
 	//window.draw(climbingBox);
 	//window.draw(playerBox);

@@ -1,6 +1,4 @@
 #pragma once
-
-
 #include "Enemy.hpp"
 #include "Animation.hpp"
 #include "Tile.hpp"
@@ -11,7 +9,7 @@ class wolf : public Enemy
 public:
 
 	wolf(sf::Texture& walk2, sf::Texture& textureAttack1, sf::Texture& textureAttack2, sf::Texture& textureAttack3, sf::Texture& textureDeath, sf::Texture& textureHurt, float x, float y) :
-
+		Enemy(maxHealth),
 		hurtSound1(hurtBuffer1),
 		hurtSound2(hurtBuffer2),
 		deathSound(deathBuffer)
@@ -130,65 +128,43 @@ public:
 	sf::FloatRect getIninitializerBox() override;
 
 	bool pendingShieldKnockback = false;
-
 	Animation* currentAnimation2;
-
 	sf::Vector2f velocity = { 3.f, 0.f };
-
 	enemyDirection lastDir;
 
 private:
 
 	std::unique_ptr<Animation> walk;
-
 	std::unique_ptr<Animation> attack1;
-
 	std::unique_ptr<Animation> attack2;
-
 	std::unique_ptr<Animation> attack3;
-
 	std::unique_ptr<Animation> death;
-
 	std::unique_ptr<Animation> hurt;
 
 	sf::RectangleShape wolfBox;
-
 	sf::RectangleShape wolfAttackBox;
-
 	sf::RectangleShape leftLureBox;
-
 	sf::RectangleShape rightLureBox;
 
 	bool active = false;
-
 	bool isKnockedBack = false;
-
 	bool knightDamaged = false;
-
 	bool wolfDeath = false;
-
 	bool playAnimationOnce = false;
-
 	bool dead = false;
-
 	float knockbackTimer = 0.f;
-
 	float attackCooldown = 0.f;
-
 	float attackDelay = 1.0f;
-
 	bool right = true;
-
 	int hitsToKill = 0;
-
 	int health = 100;
+	int maxHealth = 100;
 
 	bool wolfHurt = false;
 	bool wolfHitsShield = false;
 	bool isAttacking = false;
 
 	bool rightLure = false;
-
 	bool leftLure = false;
 
 	sf::SoundBuffer hurtBuffer1;
@@ -198,7 +174,6 @@ private:
 	sf::Sound hurtSound1;
 	sf::Sound hurtSound2;
 	sf::Sound deathSound;
-
 	
 	bool playOnce = false;
 
@@ -210,5 +185,4 @@ private:
 			currentAnimation2->getSprite().setPosition(pos);
 		}
 	}
-
 };

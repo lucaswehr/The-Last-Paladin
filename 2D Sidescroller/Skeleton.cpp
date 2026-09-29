@@ -5,6 +5,11 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 	skeletonBox.setPosition(currentAnimation->getSprite().getPosition());
 	leftLureBox.setPosition(currentAnimation->getSprite().getPosition());
 	rightLureBox.setPosition(currentAnimation->getSprite().getPosition());
+
+	if (currentAnimation == Shot1.get())
+		healthbar.update(dt, health, maxHealth, skeletonBox.getPosition().x - 40, skeletonBox.getPosition().y - 130);
+	else 
+		healthbar.update(dt, health, maxHealth, skeletonBox.getPosition().x - 40, skeletonBox.getPosition().y - 150);
 	
 	if (health <= 0)
 	{
@@ -55,11 +60,12 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 
 void Skeleton::draw(sf::RenderWindow& window)
 {
-
 	//currentAnimation->getSprite().setScale({ -2,2 });
 
 	window.draw(currentAnimation->getSprite());
 
+	if (!isDead() && health < maxHealth)
+		healthbar.draw(window);
 
 	//window.draw(leftLureBox);
 

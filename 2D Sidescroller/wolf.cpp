@@ -2,28 +2,25 @@
 
 void wolf::draw(sf::RenderWindow& window)
 {
-
-   // window.draw(wolfBox);
-
+    //window.draw(wolfBox);
 	//window.draw(wolfAttackBox);
 
 	window.draw(currentAnimation2->getSprite());
 
+	if (!isDead() && health < maxHealth)
+	   healthbar.draw(window);
+
 	//window.draw(rightLureBox);
-
 	//window.draw(leftLureBox);
-
 }
 
 void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies)
 {
-	
 	wolfBox.setPosition(currentAnimation2->getSprite().getPosition());
-
 	rightLureBox.setPosition({ currentAnimation2->getSprite().getPosition() });
-
 	leftLureBox.setPosition({ currentAnimation2->getSprite().getPosition() });
 
+	healthbar.update(dt, health, maxHealth, wolfBox.getPosition().x - 40, wolfBox.getPosition().y - 150);
 
 	if (health <= 0)
 	{
@@ -33,11 +30,10 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 			if (health == 0)
 			{
 				deathSound.play();
-
 			}
 
 			switchAnimation2(death.get());
-
+	
 			currentAnimation2->getSprite().setScale({ lastDir == enemyDirection::Right ? 1.5f : -1.5f, 1.5f });
 
 			velocity.x = 0.f;
@@ -49,8 +45,7 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 		}
 
 		currentAnimation2->update(dt); // Let the animation play
-		return;
-		
+		return;		
 	}
 	
 
@@ -78,20 +73,15 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 				int randomNumber = std::rand() % 3 + 1;
 
 				if (randomNumber == 1)
-				{
-					
+				{			
 					switchAnimation2(attack1.get());
-
 				}
 				else if (randomNumber == 2)
-				{
-					
+				{				
 					switchAnimation2(attack2.get());
-
 				}
 				else
-				{
-					
+				{				
 					switchAnimation2(attack3.get());
 				}
 
@@ -104,8 +94,7 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 				if (wolfHitsShield)
 				pendingShieldKnockback = true;  // Defer knockback until animation finishes
 
-				isAttacking = true;
-				
+				isAttacking = true;			
 			}
 			
 			if (pendingShieldKnockback && currentAnimation2->isFinished()) {
@@ -122,16 +111,11 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 			if (lastDir == enemyDirection::Right)
 			{
 				currentAnimation2->getSprite().setScale({ 1.5,1.5 });
-
 			}
 			else
 			{
 				currentAnimation2->getSprite().setScale({ -1.5,1.5 });
-
 			}
-
-
-
 		}
 		else
 		{
@@ -146,7 +130,6 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 			{
 				velocity.x = 3.f;
 			}
-
 		}
 
 		
@@ -259,9 +242,7 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 		else
 			currentAnimation2->getSprite().move({ 0.f, 0.f });
 
-
 		currentAnimation2->update(dt);
-	
 }
 
 void wolf::checkCollision(std::vector<Tile>& tiles)
