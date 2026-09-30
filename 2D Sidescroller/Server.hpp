@@ -150,6 +150,9 @@ public:
 
             countdownStarted = false;
             countdownActive = false;
+
+            lobbyPlayers[lastPlayer].wins++;
+            broadcastLobby();
         }
     }
 
@@ -262,10 +265,11 @@ public:
         packet << hostID;
         packet << static_cast<int>(lobbyPlayers.size());
         packet << serverInfo.maxPlayers;
+        
 
         for (auto& [id, item] : lobbyPlayers)
         {
-            packet << id << item.name << static_cast<int>(item.character);
+            packet << id << item.name << static_cast<int>(item.character) << lobbyPlayers[id].wins;
         }       
 
         for (auto& client : clients)

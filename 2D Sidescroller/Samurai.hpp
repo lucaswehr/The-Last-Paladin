@@ -1,6 +1,6 @@
 #pragma once
 #include "Animation.hpp"
-#include "PlayerTextures.h"
+#include "TextureHelper.h"
 #include "Player.hpp"
 #include "Tile.hpp"
 #include "Arrow.hpp"

@@ -46,6 +46,8 @@ bool AssetManager::load()
     success &= loadTexture(singlePlayerBackgroundTex, "Backgrounds/origbig.png");
     success &= loadTexture(howToPlayBackrgoundTex, "Backgrounds/forestBackground.png");
 
+    success &= loadTexture(crownSpriteTex, "GUI/crownSprite.png");
+
     return success;
 }
 
@@ -104,6 +106,14 @@ backgroundTextures AssetManager::getBackgroundTextures()
         howToPlayBackrgoundTex
     };
 }
+
+GUITextures AssetManager::getGUITextures()
+{
+    return {
+        crownSpriteTex
+    };
+}
+
 
 bool AssetManager::loadTexture(sf::Texture& texture, const string& path)
 {

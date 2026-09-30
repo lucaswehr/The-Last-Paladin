@@ -4,7 +4,7 @@
 #include "Animation.hpp"
 #include "Knight.hpp"
 #include "ServerInfo.h"
-#include "PlayerTextures.h"
+#include "TextureHelper.h"
 #include "Player.hpp"
 #include "AssetManager.hpp"
 #include "PlayerFactory.hpp"
@@ -16,6 +16,7 @@ struct LobbyPlayer
 {
     string name;
     CharacterType character;
+    int wins = 0;
 };
 
 

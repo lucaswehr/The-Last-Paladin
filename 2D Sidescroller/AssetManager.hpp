@@ -1,6 +1,6 @@
 #pragma once
 #include "Animation.hpp"
-#include "PlayerTextures.h"
+#include "TextureHelper.h"
 using namespace std;
 
 class AssetManager
@@ -12,6 +12,7 @@ public:
     knightTextures getKnightTextures();
     samuraiTextures getSamuraiTextures();
     backgroundTextures getBackgroundTextures();
+    GUITextures getGUITextures();
 
 private:
 
@@ -62,5 +63,6 @@ private:
     sf::Texture arenaPictureTex;
     sf::Texture howToPlayBackrgoundTex;
 
-    
+    // GUI Elements
+    sf::Texture crownSpriteTex;
 };

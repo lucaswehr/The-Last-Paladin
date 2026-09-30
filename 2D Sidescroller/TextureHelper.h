@@ -47,3 +47,7 @@ struct backgroundTextures {
     sf::Texture& arenaPictureTex;
     sf::Texture& howToPlayBackrgoundTex;
 };
+
+struct GUITextures {
+    sf::Texture& crownSpriteTex;
+};

@@ -9,7 +9,7 @@
 #include "PlayerState.hpp"
 #include "attackData.h"
 #include "Healthbar.hpp"
-#include "PlayerTextures.h"
+#include "TextureHelper.h"
 #include "InputState.hpp"
 #include "Player.hpp"
 

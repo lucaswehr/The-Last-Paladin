@@ -20,6 +20,8 @@ void Client::createServer(const ServerInfo& info)
         << info.passwordProtected
         << info.password;
 
+    moveToPreGameLobby = false;
+
     std::cout << "[CLIENT] Sending CreateServer packet..."
         << std::endl;
 
@@ -130,6 +132,7 @@ void Client::leaveLobby()
     gameSocket.disconnect();
 
     hasPlayerJoined = false;
+    moveToPreGameLobby = false;
 }
 
 void Client::rebuildLobbyPlayers()
@@ -424,18 +427,21 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
                     int id;
                     string name;
                     int characterInt;
+                    int wins;
 
-                    packet >> id >> name >> characterInt;
+                    packet >> id >> name >> characterInt >> wins;
 
                     CharacterType character = static_cast<CharacterType>(characterInt);
 
-                    lobbyPlayers[id] = { name, character };                   
+                    lobbyPlayers[id] = { name, character, wins };                   
 
                     for (const auto& [id, player] : lobbyPlayers)
                     {
                         std::cout << "ID: " << id
                             << " | Character: "
                             << static_cast<int>(player.character)
+                            << "Wins: "  
+                            << wins
                             << '\n';
                     }
                 }
@@ -443,17 +449,15 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
 
             if (type == PacketType::StartLoading)
             {
-                for (auto& [id,player] : players)
+                for (auto it = players.begin(); it != players.end(); )
                 {
-                    std::cout << "Resetting player " << id << '\n';
-
-                    if (!player)
+                    if (it->first != myPlayerID)
+                        it = players.erase(it);
+                    else
                     {
-                        std::cout << "Null player!\n";
-                        continue;
+                        it->second->resetPlayer(spawnpoints[it->first]);
+                        ++it;
                     }
-
-                    player->resetPlayer(spawnpoints[id]);
                 }
               
                 this->startLoading = true;
@@ -517,6 +521,8 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
                 winnerName.clear();
 
                 winnerName = lobbyPlayers[winnerID].name;
+
+                
 
             }        
         }

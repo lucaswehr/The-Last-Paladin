@@ -175,7 +175,7 @@
     <ClInclude Include="ParryDemo.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="PlayerFactory.hpp" />
-    <ClInclude Include="PlayerTextures.h" />
+    <ClInclude Include="TextureHelper.h" />
     <ClInclude Include="Level.hpp" />
     <ClInclude Include="LobbyClient.hpp" />
     <ClInclude Include="LobbyServer.hpp" />

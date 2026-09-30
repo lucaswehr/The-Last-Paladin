@@ -18,15 +18,6 @@ public:
 		arrowBox.setSize({ 30.f,10.f });
 		arrowBox.setScale({ 2,3 });
 
-		//int random = 0;
-
-		//if (gravityChange == 2)
-		//    random = 500+ std::rand() % 400; // 500-900
-		//else if (gravityChange == 1)
-		//	random = std::rand() % 1000 + 2000; // 2000-3000
-
-		//std::cout << gravityChange << std::endl;
-
 		gravity = gravityChange;
 		
 				if (direction.x < 0.f)

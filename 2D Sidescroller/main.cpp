@@ -16,7 +16,7 @@
 #include "TextBox.hpp"
 #include "UI-Helper.hpp"
 #include "HelperMain.hpp"
-#include "PlayerTextures.h"
+#include "TextureHelper.h"
 #include "DebugOverlay.hpp"
 #include "Samurai.hpp"
 #include "AssetManager.hpp"
@@ -667,6 +667,9 @@ int main(int argc, char** argv)
     sf::Sprite arenaSprite1(assets.getBackgroundTextures().arenaPictureTex);
     arenaSprite1.setPosition({ 1050,220 });
     arenaSprite1.scale({ 0.35,0.35 });
+
+    sf::Sprite crownSprite(assets.getGUITextures().crownSpriteTex);
+    crownSprite.setScale({ 1,1 });
 
     sf::SoundBuffer menuSoundBuffer;
     sf::Sound menuSelectSound(menuSoundBuffer);
@@ -1673,6 +1676,29 @@ int main(int argc, char** argv)
 
         }
 
+         bool inLobbySubpage =
+            pressedLobbyCharacterSelectButton &&
+            (gameState == GameState::characterSelect ||
+                gameState == GameState::howtoPlay ||
+                gameState == GameState::howToPlay2 ||
+                gameState == GameState::howToPlay3 ||
+                gameState == GameState::specialInteractions ||
+                gameState == GameState::specialInteractions2);
+
+        if (inLobbySubpage)
+        {
+            client.receiveNetworkEvent(players, deltaTime, playerColors, spawnpoints,
+                assets, fancyFontText, characterType, standardFont);
+
+            if (client.loadingStarted())
+            {
+                menuMusic.stop();
+                pressedLobbyCharacterSelectButton = false;  
+                gameState = GameState::loading;
+                loadingClock.restart();
+            }
+        }
+
         switch (gameState)
         {
             case GameState::mainMenu:
@@ -2096,14 +2122,7 @@ int main(int argc, char** argv)
                 break;
             }
             case GameState::howtoPlay:
-            {
-                if (client.loadingStarted())
-                {
-                    menuMusic.stop();
-                    gameState = GameState::loading;
-                    loadingClock.restart();
-                }
-
+            {            
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2169,14 +2188,7 @@ int main(int argc, char** argv)
                 break;
             }
             case GameState::howToPlay2:
-            {
-                if (client.loadingStarted())
-                {
-                    menuMusic.stop();
-                    gameState = GameState::loading;
-                    loadingClock.restart();
-                }
-
+            {              
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2246,14 +2258,7 @@ int main(int argc, char** argv)
                 break;
             }
             case GameState::howToPlay3:
-            {
-                if (client.loadingStarted())
-                {
-                    menuMusic.stop();
-                    gameState = GameState::loading;
-                    loadingClock.restart();
-                }
-
+            {              
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2330,14 +2335,7 @@ int main(int argc, char** argv)
                 break;
             }
             case GameState::specialInteractions:
-            {
-                if (client.loadingStarted())
-                {
-                    menuMusic.stop();
-                    gameState = GameState::loading;
-                    loadingClock.restart();
-                }
-
+            {              
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2399,14 +2397,7 @@ int main(int argc, char** argv)
                 break;
             }
             case GameState::specialInteractions2:
-            {
-                if (client.loadingStarted())
-                {
-                    menuMusic.stop();
-                    gameState = GameState::loading;
-                    loadingClock.restart();
-                }
-
+            {           
                 if (Menu.getBounds().contains(mousePos))
                 {
                     Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
@@ -2832,14 +2823,7 @@ int main(int argc, char** argv)
                 window.draw(characterSelectSamuraiIdleDemo.getSprite());           
                            
                 if (pressedLobbyCharacterSelectButton)
-                {
-                    if (client.loadingStarted())
-                    {
-                        menuMusic.stop();
-                        gameState = GameState::loading;
-                        loadingClock.restart();
-                    }
-
+                {                 
                     window.draw(statsBanner1);
                     window.draw(statsBanner2);
                     window.draw(statsBanner3);
@@ -3279,7 +3263,17 @@ int main(int argc, char** argv)
                     text.setCharacterSize(40);
                     text.setOutlineColor(sf::Color::Black);
                     text.setOutlineThickness(2);
-                    text.setFillColor(myColor);                  
+                    text.setFillColor(myColor);   
+
+                    sf::Text totalWinsText(standardFont);
+                    totalWinsText.setString(to_string(player.wins));
+                    totalWinsText.setPosition({ x + 65, 800.f });
+                    totalWinsText.setCharacterSize(40);
+                    totalWinsText.setOutlineColor(sf::Color::Black);
+                    totalWinsText.setOutlineThickness(2);
+                    totalWinsText.setFillColor(sf::Color::White);
+
+                    crownSprite.setPosition({ x + 65, 800 });
                                   
                     if (player.character == CharacterType::Knight)
                     {
@@ -3295,7 +3289,9 @@ int main(int argc, char** argv)
                     float width = text.getLocalBounds().size.x;
                     x += width + 150;
 
+                    window.draw(crownSprite);
                     window.draw(text);
+                    window.draw(totalWinsText);
                                                   
                     i++;
                 }
@@ -3330,7 +3326,7 @@ int main(int argc, char** argv)
                             StartGame.getText().setFillColor(sf::Color::White); // Normal
                             playMenuSound8 = false;
                         }
-
+                        
                         window.draw(startGameBackground);
                         StartGame.draw(window);                     
                     }             

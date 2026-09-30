@@ -134,7 +134,7 @@
     <ClInclude Include="HelperMain.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerTextures.h">
+    <ClInclude Include="TextureHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DebugOverlay.hpp">
