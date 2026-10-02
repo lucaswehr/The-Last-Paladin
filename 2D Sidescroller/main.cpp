@@ -669,7 +669,8 @@ int main(int argc, char** argv)
     arenaSprite1.scale({ 0.35,0.35 });
 
     sf::Sprite crownSprite(assets.getGUITextures().crownSpriteTex);
-    crownSprite.setScale({ 1,1 });
+    crownSprite.setScale({ 0.02f,0.02f });
+    crownSprite.setOrigin({ 0.f, 0.f });
 
     sf::SoundBuffer menuSoundBuffer;
     sf::Sound menuSelectSound(menuSoundBuffer);
@@ -1826,8 +1827,8 @@ int main(int argc, char** argv)
                     BattleMode.getText().setFillColor(sf::Color::White); // Normal
 
                     playMenuSound5 = false;
-                }                
-
+                }     
+            
                 break;
             }
             case GameState::playing:
@@ -1857,6 +1858,7 @@ int main(int argc, char** argv)
                 for (const auto& arrow2 : arrows)
                 {
                     window.draw(arrow2.sprite);
+                    window.draw(arrow2.arrowBox);
 
                 }
 
@@ -3265,15 +3267,18 @@ int main(int argc, char** argv)
                     text.setOutlineThickness(2);
                     text.setFillColor(myColor);   
 
+                    float width2 = text.getLocalBounds().size.x;
+                    float playerCenterX = x + width2 / 2.f;
+
                     sf::Text totalWinsText(standardFont);
                     totalWinsText.setString(to_string(player.wins));
-                    totalWinsText.setPosition({ x + 65, 800.f });
+                    totalWinsText.setPosition({ playerCenterX + 50, 800.f });
                     totalWinsText.setCharacterSize(40);
                     totalWinsText.setOutlineColor(sf::Color::Black);
                     totalWinsText.setOutlineThickness(2);
                     totalWinsText.setFillColor(sf::Color::White);
 
-                    crownSprite.setPosition({ x + 65, 800 });
+                    crownSprite.setPosition({ playerCenterX + 31, 800 });                                            
                                   
                     if (player.character == CharacterType::Knight)
                     {
@@ -3288,10 +3293,14 @@ int main(int argc, char** argv)
 
                     float width = text.getLocalBounds().size.x;
                     x += width + 150;
-
-                    window.draw(crownSprite);
+                    
                     window.draw(text);
-                    window.draw(totalWinsText);
+
+                    if (player.wins > 0)
+                    {
+                        window.draw(crownSprite);
+                        window.draw(totalWinsText);
+                    }
                                                   
                     i++;
                 }

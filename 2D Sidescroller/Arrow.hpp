@@ -15,7 +15,7 @@ public:
 		velocity = direction * 2000.f;
 
 		arrowBox.setFillColor(sf::Color(255, 0, 0, 128));
-		arrowBox.setSize({ 30.f,10.f });
+		arrowBox.setSize({ 30.f,5.f });
 		arrowBox.setScale({ 2,3 });
 
 		gravity = gravityChange;

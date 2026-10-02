@@ -1086,15 +1086,28 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 {
 	if (isAttackingBool() && isHitboxActive())
 	{
-		for (auto& example : enemies)
+		for (auto& enemy : enemies)
+		{			
+				if (attackBox.getGlobalBounds().findIntersection(enemy->getBounds()))
+				{
+					enemy->isHurtTrue();
+				}
+				else
+				{
+					enemy->isHurtFalse();
+				}				
+		}
+	}
+	
+	for (auto& enemy : enemies)
+	{
+		for (auto& arrow : arrows)
 		{
-			if (attackBox.getGlobalBounds().findIntersection(example->getBounds()))
+			if (arrow.hasBeenReflected && arrow.getBounds().findIntersection(enemy->getBounds()))
 			{
-				example->isHurtTrue();
-			}
-			else
-			{
-				example->isHurtFalse();
+				arrow.velocity = { 0.f,0.f };
+				arrow.hasBeenReflected = false;
+				enemy->isHurtTrue();
 			}
 		}
 	}
@@ -1118,7 +1131,10 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 				shieldSoundPlayed = true;
 			}
 
-			arrow.velocity = { 0.f, 0.f };
+			arrow.reflect();		
+			arrow.updateDirectionVisuals();
+			arrow.hasBeenReflected = true;
+
 			arrow.setArrowOnTile(true);
 		}
 		else if (playerBox.getGlobalBounds().findIntersection(arrow.getBounds()))
