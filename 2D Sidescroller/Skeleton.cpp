@@ -6,6 +6,8 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 	leftLureBox.setPosition(currentAnimation->getSprite().getPosition());
 	rightLureBox.setPosition(currentAnimation->getSprite().getPosition());
 
+	updateDamageText(dt);
+
 	if (currentAnimation == Shot1.get())
 		healthbar.update(dt, health, maxHealth, skeletonBox.getPosition().x - 40, skeletonBox.getPosition().y - 130);
 	else 
@@ -31,17 +33,25 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 	}
 
 	if (isHurt && !dead)
-	{	
+	{			
 		switchAnimation(Hurt.get());
-
 		this->boneCrackSound.play();
 
+		if (!executeHurtSoundOnce)
+		{
+			sf::Vector2f pos = { skeletonBox.getPosition().x, skeletonBox.getPosition().y - 140 };
+			damageNumbers.push_back(std::move(
+			createDamageNumberText(damageFontText, "-" + std::to_string(knightDamage), 2, 2, sf::Color::Red, pos)));
+			executeHurtSoundOnce = true;
+		}
+		
 		if (currentAnimation->isFinished())
 		{
 			Hurt->reset();
 			std::cout << "HURT" << std::endl;
-			health -= 20;
+			health -= knightDamage;
 			isHurt = false;
+			executeHurtSoundOnce = false;
 		}	
 	}
 
@@ -60,17 +70,18 @@ void Skeleton::update(float dt, std::vector<Tile>& tiles, std::vector<std::uniqu
 
 void Skeleton::draw(sf::RenderWindow& window)
 {
-	//currentAnimation->getSprite().setScale({ -2,2 });
-
 	window.draw(currentAnimation->getSprite());
 
 	if (!isDead() && health < maxHealth)
 		healthbar.draw(window);
 
+	for (const auto& damageNumber : damageNumbers)
+	{
+		window.draw(damageNumber.text);
+	}
+
 	//window.draw(leftLureBox);
-
 	//window.draw(rightLureBox);
-
 	//window.draw(skeletonBox);
 }
 

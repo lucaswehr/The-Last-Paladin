@@ -682,7 +682,7 @@ bool Knight::tryStartRoll(InputState& input)
 	float timeSinceLastRoll = rollDelayClock.getElapsedTime().asSeconds();
 
 	if (!input.rollPressed) return false;
-	if (isRolling || isJumping || isSprinting || isSpecialAttack) return false;
+	if (isRolling || isJumping || isSprinting || isSpecialAttack || isSprintAttacking || isJumpAttacking) return false;
 	if (timeSinceLastRoll < minRollDelay) return false;
 
 	rollLogic();
@@ -705,6 +705,8 @@ void Knight::rollLogic()
 		rollSound2.play();
 
 	state = PlayerState::Roll;
+	isNormalAttacking = false;
+	isJumpAttacking = false;
 	currentAnimation->reset();
 
 	rollDelayClock.reset();	
@@ -1088,9 +1090,10 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 	{
 		for (auto& enemy : enemies)
 		{			
-				if (attackBox.getGlobalBounds().findIntersection(enemy->getBounds()))
+				if (attackBox.getGlobalBounds().findIntersection(enemy->getBounds()) && state != PlayerState::SpecialAttack)
 				{
-					enemy->isHurtTrue();
+					enemy->isHurtTrue();										
+					enemy->getKnightDamage(knightAttackTable[determineAttackID()].damage);
 				}
 				else
 				{
@@ -1107,6 +1110,7 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 			{
 				arrow.velocity = { 0.f,0.f };
 				arrow.hasBeenReflected = false;
+				enemy->getKnightDamage(deflectedArrowDamage);
 				enemy->isHurtTrue();
 			}
 		}
@@ -1144,6 +1148,8 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 			state = PlayerState::Hurt;
 			isKnockedback = true;
 			knockbackTimer = 0.8f;
+			isSpecialAttack = false;
+			guardTimer = 0.f;
 
 			health -= 30;
 
@@ -1181,6 +1187,8 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 				state = PlayerState::Hurt;
 				isHurt = true;
 				isKnockedback = true;
+				isSpecialAttack = false;
+				guardTimer = 0.f;
 				knockbackTimer = 0.8f;
 
 				
@@ -1259,11 +1267,13 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 			knightWolfCollision = false;
 			playSoundOnce = false;
 			isHurt = false;
+			isNormalAttacking = false;
+			isSpecialAttack = false;
+			postAttackCooldown = false;
 			playOnce3 = true;
-
-
-			switchAnimation(&Idle);
 			
+			state = PlayerState::Idle;  
+			switchAnimation(&Idle);		
 		}
 
 	}

@@ -48,6 +48,16 @@ bool AssetManager::load()
 
     success &= loadTexture(crownSpriteTex, "GUI/crownSprite.png");
 
+    success &= loadTexture(wolfIdleTex, "wolf/Idle.png");
+    success &= loadTexture(wolfWalkTex, "wolf/Walk.png");
+    success &= loadTexture(wolfAttack1Tex, "wolf/Attack_1.png");
+    success &= loadTexture(wolfAttack2Tex, "wolf/Attack_2.png");
+    success &= loadTexture(wolfAttack3Tex, "wolf/Attack_3.png");
+    success &= loadTexture(wolfHurtTex, "wolf/Hurt.png");
+    success &= loadTexture(wolfSprintTex, "wolf/Run.png");
+    success &= loadTexture(wolfSprintAttackTex, "wolf/Run+Attack.png");
+    success &= loadTexture(wolfDeathTex, "wolf/Dead.png");
+
     return success;
 }
 
@@ -111,6 +121,21 @@ GUITextures AssetManager::getGUITextures()
 {
     return {
         crownSpriteTex
+    };
+}
+
+WolfTextures AssetManager::getWolfTextures()
+{
+    return {
+         wolfIdleTex,
+         wolfWalkTex,
+         wolfAttack1Tex,
+         wolfAttack2Tex,
+         wolfAttack3Tex,
+         wolfDeathTex,
+         wolfHurtTex,
+         wolfSprintTex,
+         wolfSprintAttackTex
     };
 }
 

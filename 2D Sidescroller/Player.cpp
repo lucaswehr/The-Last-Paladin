@@ -756,7 +756,7 @@ void Player::updatePotionLogic(sf::Font& standardFont)
 
 		if (currentAnimation->getCurrentFrame() == 2)
 		{
-			//potionSound.play();
+			potionSound.play();
 		}
 
 		if (currentAnimation->isFinished())

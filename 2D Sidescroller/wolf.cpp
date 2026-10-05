@@ -1,450 +1,465 @@
 #include "wolf.hpp"
+#include <cstdlib>
+#include <algorithm>
 
 void wolf::draw(sf::RenderWindow& window)
 {
-    //window.draw(wolfBox);
-	//window.draw(wolfAttackBox);
-
-	window.draw(currentAnimation2->getSprite());
+	window.draw(currentAnimation->getSprite());
 
 	if (!isDead() && health < maxHealth)
-	   healthbar.draw(window);
+		healthbar.draw(window);
 
+	for (const auto& damageNumber : damageNumbers)
+	{
+		window.draw(damageNumber.text);
+	}
+
+	//window.draw(wolfBox);
+	//window.draw(wolfAttackBox);
 	//window.draw(rightLureBox);
 	//window.draw(leftLureBox);
 }
 
-void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies)
+// ---------------------------------------------------------------------
+// Flow:
+//   Idle (spawn) --knight enters lure--> engageKnight() --50%--> Approach (walk up, attack)
+//                                                       --50%--> Windup -> Sprint -> sprint Attack -> Recover
+//   Approach / Windup --knight leaves lure--> Patrol
+//   Patrol --knight enters lure--> engageKnight()
+//   Attack / Recover / Knockback finish --> lure still occupied ? Idle (re-engage) : Patrol
+// ---------------------------------------------------------------------
+void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>&)
 {
-	wolfBox.setPosition(currentAnimation2->getSprite().getPosition());
-	rightLureBox.setPosition({ currentAnimation2->getSprite().getPosition() });
-	leftLureBox.setPosition({ currentAnimation2->getSprite().getPosition() });
+	updateBoundryBoxes();
+	updateDamageText(dt);
+	healthbar.update(dt, health, maxHealth, wolfBox.getPosition().x - 40.f, wolfBox.getPosition().y - 150.f);
 
-	healthbar.update(dt, health, maxHealth, wolfBox.getPosition().x - 40, wolfBox.getPosition().y - 150);
+	if (handleDeathLogic(dt)) return;
 
-	if (health <= 0)
+	if (attackCooldown > 0.f) attackCooldown -= dt;
+
+	handleHurtLogic();
+
+	float animSpeed = 1.f;
+
+	switch (state)
 	{
-		if (!playAnimationOnce)
+	case State::Idle:
+		velocity.x = 0.f;
+		switchAnimation(idleAnim.get());
+		if (inLure())
+			engageKnight();
+		break;
+
+	case State::Patrol:
+		switchAnimation(walk.get());
+		velocity.x = dirSign() * kWalkSpeed;
+		if (inLure())
+			engageKnight();
+		break;
+
+	case State::Approach:
+		if (!inLure() && !inContact())
 		{
+			state = State::Patrol;
+			break;
+		}
 
-			if (health == 0)
-			{
-				deathSound.play();
-			}
+		if (knightBehind()) { engageKnight(); break; }
 
-			switchAnimation2(death.get());
-	
-			currentAnimation2->getSprite().setScale({ lastDir == enemyDirection::Right ? 1.5f : -1.5f, 1.5f });
+		faceKnight();
 
+		if (inContact())
+		{
 			velocity.x = 0.f;
-
-			playAnimationOnce = true;
-
-			dead = true;
-
-		}
-
-		currentAnimation2->update(dt); // Let the animation play
-		return;		
-	}
-	
-
-		if (lastDir == enemyDirection::Left)
-		{
-			wolfAttackBox.setPosition({ currentAnimation2->getSprite().getPosition().x + 50.f * -1, currentAnimation2->getSprite().getPosition().y });
-		}
-		else
-		{
-			wolfAttackBox.setPosition({ currentAnimation2->getSprite().getPosition().x + 50.f, currentAnimation2->getSprite().getPosition().y });
-		}
-
-		if (attackCooldown > 0.f)
-		{
-			attackCooldown -= dt;
-		}
-
-		//std::cout << velocity.x << std::endl;
-
-		if ((knightDamaged || this->wolfHitsShield) && !isKnockedBack)
-		{
-
 			if (attackCooldown <= 0.f)
-			{
-				int randomNumber = std::rand() % 3 + 1;
-
-				if (randomNumber == 1)
-				{			
-					switchAnimation2(attack1.get());
-				}
-				else if (randomNumber == 2)
-				{				
-					switchAnimation2(attack2.get());
-				}
-				else
-				{				
-					switchAnimation2(attack3.get());
-				}
-
-				currentAnimation2->reset();
-
-				velocity.x = 0.f;
-
-				attackCooldown = attackDelay;
-	
-				if (wolfHitsShield)
-				pendingShieldKnockback = true;  // Defer knockback until animation finishes
-
-				isAttacking = true;			
-			}
-			
-			if (pendingShieldKnockback && currentAnimation2->isFinished()) {
-
-				wolfHitsShield = true;
-				isKnockedBack = true;
-				knockbackTimer = 0.5f;
-				pendingShieldKnockback = false;
-				isAttacking = false;
-
-				std::cout << "WOLF KNOCKED BACK AFTER ATTACK ANIMATION" << std::endl;
-			}
-
-			if (lastDir == enemyDirection::Right)
-			{
-				currentAnimation2->getSprite().setScale({ 1.5,1.5 });
-			}
+				startAttack(false);
 			else
-			{
-				currentAnimation2->getSprite().setScale({ -1.5,1.5 });
-			}
+				switchAnimation(idleAnim.get()); // waiting for the next attack
 		}
 		else
 		{
-			switchAnimation2(walk.get());
-
-			if (lastDir == enemyDirection::Left)
-			{
-				velocity.x = -3.f;
-
-			}
-			else
-			{
-				velocity.x = 3.f;
-			}
+			switchAnimation(walk.get());
+			velocity.x = dirSign() * kWalkSpeed;
 		}
+		break;
 
-		
-		/*if (isAttacking && currentAnimation2->isFinished())
+	case State::Windup:
+		velocity.x = 0.f;
+		switchAnimation(idleAnim.get());
+		windupTimer -= dt;
+
+		if (inContact())
+			startAttack(false);
+		else if (!inLure())
+			state = State::Patrol;
+		else if (knightBehind())
+			engageKnight();
+		else if (windupTimer <= 0.f)
+			startSprint();
+		break;
+
+	case State::Sprint:
+		if (!sprintOnce)
 		{
-			isAttacking = false;
-			std::cout << "WOLF DONE ATTACKING (no shield knockback)" << std::endl;
-		}*/
-		
-
-		if (isKnockedBack && lastDir == enemyDirection::Left)
-		{
-			
-			velocity.x = 5.f;
-
-			knockbackTimer -= dt;
-			if (knockbackTimer <= 0.f)
-			{
-				isKnockedBack = false;
-				velocity.x = -3.f;
-				wolfHurt = false;
-				playOnce = false;
-				wolfHitsShield = false;
-				
-			}
+			velocity.x = dirSign() * kSprintSpeed;
+			sprintOnce = true;
 		}
-		else if (isKnockedBack && lastDir == enemyDirection::Right)
+		sprintTimer -= dt;
+
+		if (inContact())
+			startAttack(true);
+		else if (sprintTimer <= 0.f)
+			startRecover(kRecoverTime);
+		break;
+
+	case State::Attack:
+		if (wolfHitsShield)
+			pendingShieldKnockback = true;
+
+		lungeSpeed = std::max(0.f, lungeSpeed - kLungeDecay * dt);
+		velocity.x = dirSign() * lungeSpeed;
+
+		if (currentAnimation->isFinished())
+			finishAttack();
+		break;
+
+	case State::Recover:
+		velocity.x = 0.f;
+		sprintOnce = false;
+		switchAnimation(idleAnim.get());
+		recoverTimer -= dt;
+		if (recoverTimer <= 0.f)
 		{
-			
-				velocity.x = -5.f;
-		
-			knockbackTimer -= dt;
-			if (knockbackTimer <= 0.f)
-			{
-				isKnockedBack = false;
-				velocity.x = 3.f;
-				wolfHurt = false;
-				playOnce = false;
-				wolfHitsShield = false;
-			}
-
+			if (inLure())
+				engageKnight();
+			else          
+				state = State::Patrol;
 		}
+		break;
 
-		for (auto& wolf : enemies)
+	case State::Knockback:
+		switchAnimation(wolfHurt ? hurt.get() : walk.get());
+		velocity.x = -dirSign() * kKnockbackSpeed;
+		knockbackTimer -= dt;
+		sprintOnce = false;
+		if (knockbackTimer <= 0.f)
 		{
-			if (wolfHurt)
-			{
-				switchAnimation2(hurt.get());
-
-				currentAnimation2->getSprite().setScale({ lastDir == enemyDirection::Right ? 1.5f : -1.5f, 1.5f });
-
-				//velocity.x = 0.f;
-			}
-
-
-			if (wolfHurt && !playOnce)
-			{
-
-				int randomNumber = std::rand() % 2 + 1;
-
-				if (randomNumber == 1)
-				{
-					hurtSound1.play();
-				}
-				else
-				{
-                   hurtSound2.play();
-				}
-
-				playOnce = true;
-
-
-				this->health -= 20;
-				
-			}
+			velocity.x = 0.f;
+			wolfHurt = false;
+			playOnce = false;
+			wolfHitsShield = false;
+			state = inLure() ? State::Idle : State::Patrol;
 		}
+		break;
+	case State::Dead:
+		break;
+	}
 
-
+	if (velocity.x != 0.f)
+	{
 		checkCollision(tiles);
 		checkForCliff(tiles);
+	}
 
-		/*if (isAttacking)
-		std::cout << "TRUE" << std::endl;
-		else
-			std::cout << "FALSE" << std::endl;*/
-
-		
-		if (knightDamaged)
-		{
-			isAttacking = false;
-		}
-
-		if (rightLure && !isKnockedBack)
-		{
-		//	velocity.x = 3.f;
-			currentAnimation2->getSprite().setScale({ 1.5,1.5 });
-		}
-
-		if (leftLure && !isKnockedBack)
-		{
-			currentAnimation2->getSprite().setScale({ -1.5,1.5 });
-			//velocity.x = -3.f;
-		}
-
-		if (lastDir == enemyDirection::Left)
-			currentAnimation2->getSprite().setScale({ -1.5,1.5 });
-
-		if (!isAttacking)
-			currentAnimation2->getSprite().move({ velocity.x, 0.f });
-		else
-			currentAnimation2->getSprite().move({ 0.f, 0.f });
-
-		currentAnimation2->update(dt);
+	applyFacing();
+	currentAnimation->getSprite().move({ velocity.x, 0.f });
+	currentAnimation->update(dt * animSpeed);
 }
 
+// ---------------------------------------------------------------------
+// Transitions
+// ---------------------------------------------------------------------
+void wolf::engageKnight()
+{
+	faceKnight();
+
+	if (std::rand() % 100 < kSprintChancePct)
+	{
+		state = State::Windup;       // sprint attack
+		windupTimer = kWindupTime;
+		velocity.x = 0.f;
+		suspenseSound.play();
+	}
+	else
+	{
+		state = State::Approach;     // normal walk-up attack
+	}
+}
+
+void wolf::startSprint()
+{
+	state = State::Sprint;
+	sprintTimer = kSprintMaxTime;
+	chargeSound.play();
+	switchAnimation(sprintAnim.get());
+}
+
+void wolf::startAttack(bool sprinting)
+{
+	if (sprinting)
+	{
+		switchAnimation(sprintAttackAnim.get());
+	}
+	else
+	{
+		switch (std::rand() % 3)
+		{
+		case 0:  switchAnimation(attack1.get()); break;
+		case 1:  switchAnimation(attack2.get()); break;
+		default: switchAnimation(attack3.get()); break;
+		}
+	}
+
+	currentAnimation->reset();
+
+	state = State::Attack;
+	sprintAttacking = sprinting;
+	lungeSpeed = sprinting ? kSprintSpeed : 0.f;
+	velocity.x = dirSign() * lungeSpeed;
+	attackCooldown = attackDelay;
+	pendingShieldKnockback = wolfHitsShield;
+}
+
+void wolf::finishAttack()
+{
+	const bool wasSprint = sprintAttacking;
+
+	sprintAttacking = false;
+	lungeSpeed = 0.f;
+	velocity.x = 0.f;
+
+	if (pendingShieldKnockback)
+	{
+		pendingShieldKnockback = false;
+		wolfHitsShield = true;
+		startKnockback(kShieldKnockback);
+	}
+	else if (wasSprint)
+	{
+		startRecover(kRecoverTime);
+	}
+	else
+	{
+		state = inLure() ? State::Approach : State::Patrol;
+	}
+}
+
+void wolf::startRecover(float time)
+{
+	state = State::Recover;
+	recoverTimer = time;
+	velocity.x = 0.f;
+}
+
+void wolf::startKnockback(float time)
+{
+	state = State::Knockback;
+	knockbackTimer = time;
+}
+
+void wolf::turnAround()
+{
+	lastDir = (lastDir == enemyDirection::Right) ? enemyDirection::Left : enemyDirection::Right;
+	velocity.x = -velocity.x;
+}
+
+bool wolf::knightBehind()
+{
+	return (lastDir == enemyDirection::Right && leftLure && !rightLure) ||
+		(lastDir == enemyDirection::Left && rightLure && !leftLure);	
+}
+
+
+// ---------------------------------------------------------------------
+// Boxes / death / hurt
+// ---------------------------------------------------------------------
+void wolf::updateBoundryBoxes()
+{
+	const sf::Vector2f pos = currentAnimation->getSprite().getPosition();
+
+	wolfBox.setPosition(pos);
+	rightLureBox.setPosition(pos);
+	leftLureBox.setPosition(pos);
+	wolfAttackBox.setPosition({ pos.x + 50.f * dirSign(), pos.y });
+}
+
+bool wolf::handleDeathLogic(float dt)
+{
+	if (health > 0)
+		return false;
+
+	if (!playAnimationOnce)
+	{
+		if (health <= 0)
+			deathSound.play();
+
+		switchAnimation(death.get());
+		velocity.x = 0.f;
+		playAnimationOnce = true;
+		dead = true;
+		state = State::Dead;
+	}
+
+	currentAnimation->getSprite().setColor(sf::Color::White);
+	currentAnimation->getSprite().setScale({ dirSign() * kSpriteScale, kSpriteScale });
+	currentAnimation->update(dt);
+	return true;
+}
+
+void wolf::handleHurtLogic()
+{
+	if (!wolfHurt || playOnce)
+		return;
+
+	if (std::rand() % 2 == 0)
+		hurtSound1.play();
+	else
+		hurtSound2.play();
+
+	playOnce = true;
+	health -= knightDamage;
+
+	sf::Vector2f pos = { wolfBox.getPosition().x, wolfBox.getPosition().y - 140 };
+	damageNumbers.push_back(std::move(
+		createDamageNumberText(damageFontText, "-" + std::to_string(knightDamage), 2, 2, sf::Color::Red, pos)));
+}
+
+// ---------------------------------------------------------------------
+// Facing
+// ---------------------------------------------------------------------
+void wolf::faceKnight()
+{
+	if (rightLure && !leftLure)      lastDir = enemyDirection::Right;
+	else if (leftLure && !rightLure) lastDir = enemyDirection::Left;
+}
+
+void wolf::applyFacing()
+{
+	sf::Sprite& s = currentAnimation->getSprite();
+	s.setScale({ dirSign() * kSpriteScale, kSpriteScale });
+	s.setColor(state == State::Windup ? sf::Color(255, 150, 100) : sf::Color::White); // sprint telegraph
+}
+
+// ---------------------------------------------------------------------
+// Environment
+// ---------------------------------------------------------------------
 void wolf::checkCollision(std::vector<Tile>& tiles)
 {
-	bool collisionDetected = false;
+	const sf::FloatRect box = wolfBox.getGlobalBounds();
 
 	for (const auto& tile : tiles)
 	{
 		if (!tile.isCollidableTile()) continue;
 
-		if (wolfBox.getGlobalBounds().findIntersection(tile.getBounds()))
+		const sf::FloatRect tb = tile.getBounds();
+		if (!box.findIntersection(tb)) continue;
+
+		// Which side of the wolf is the tile on? (same test you had before)
+		const bool tileOnRight = box.position.x + box.size.x - 50.f <= tb.position.x + 50.f;
+
+		// Moving away from the tile: ignore it so the wolf can back out of the wall
+		const bool movingIntoTile = (tileOnRight && velocity.x > 0.f) || (!tileOnRight && velocity.x < 0.f);
+		if (!movingIntoTile) continue;
+
+		switch (state)
 		{
-			if (wolfBox.getGlobalBounds().position.x + wolfBox.getGlobalBounds().size.x - 50 <= tile.getBounds().position.x + 50.f) //collision from right side
-			{
-				//std::cout << "WOLF COLLISION FROM RIGHT" << std::endl;
-
-				currentAnimation2->getSprite().setScale({ -1.5,1.5 });
-
-				collisionDetected = true;
-
-				lastDir = enemyDirection::Left;
-
-				break;
-			}
-			else
-			{
-				//std::cout << "WOLF COLLISION FROM LEFT" << std::endl;
-
-				currentAnimation2->getSprite().setScale({ 1.5,1.5 });
-
-				collisionDetected = true;
-
-				lastDir = enemyDirection::Right;
-
-				break;
-			}
-			
+		case State::Patrol:
+		{
+			const bool fromRight = box.position.x + box.size.x - 50.f <= tb.position.x + 50.f;
+			lastDir = fromRight ? enemyDirection::Left : enemyDirection::Right;
+			velocity.x = -velocity.x;
+			break;
 		}
+		case State::Sprint:
+			startRecover(kRecoverTime);   // slammed into a wall
+			break;
+		default:
+			velocity.x = 0.f;             // approach / lunge / knockback: just stop
+			lungeSpeed = 0.f;
+			break;
+		}
+		return;
 	}
+}
 
-	if (collisionDetected)
+bool wolf::groundAhead(std::vector<Tile>& tiles)
+{
+	const sf::Vector2f pos = currentAnimation->getSprite().getPosition();
+
+	const float look = (state == State::Sprint) ? 60.f : 20.f;
+	const float checkX = pos.x + (velocity.x > 0.f ? look : -look);
+	const float checkY = pos.y + 10.f;
+
+	for (const auto& tile : tiles)
 	{
-		velocity.x = -velocity.x; // Flip direction
-		//std::cout << "WOLF COLLISION" << std::endl;
+		if (!tile.isCollidableTile()) continue;
+		if (tile.getBounds().contains({ checkX, checkY }))
+			return true;
 	}
+	return false;
 }
 
 void wolf::checkForCliff(std::vector<Tile>& tiles)
 {
+	if (velocity.x == 0.f || groundAhead(tiles))
+		return;
 
-	sf::Sprite& s = currentAnimation2->getSprite();
-	sf::Vector2f position = s.getPosition();
-
-	float offsetX = (velocity.x > 0) ? 20.f : -20.f;  // look ahead to the right or left
-	float checkX = position.x + offsetX;
-	float checkY = position.y + 10.f; // slightly below the sprite's feet
-
-	bool groundFound = false;
-
-	for (const auto& tile : tiles) {
-		if (!tile.isCollidableTile()) continue;
-
-		sf::FloatRect tileBounds = tile.getBounds();
-
-		// Does the tile contain the ground check point?
-		if (tileBounds.contains({ checkX, checkY })) {
-			groundFound = true;
-
-			break;
-		}
-
-	}
-
-	if (!groundFound && lastDir == enemyDirection::Right) {
-		// No ground below — turn around
-		velocity.x = -velocity.x;
-
-		lastDir = enemyDirection::Left;
-
-		float baseScale = 1.5f;
-		s.setScale({ (velocity.x > 0) ? baseScale : -baseScale, baseScale });
-	}
-	else if (!groundFound && lastDir == enemyDirection::Left)
+	switch (state)
 	{
-		velocity.x = -velocity.x;
-
-		lastDir = enemyDirection::Right;
-
-		float baseScale = 1.5f;
-		s.setScale({ (velocity.x > 0) ? baseScale : -baseScale, baseScale });
-
-
+	case State::Patrol:
+		turnAround();
+		break;
+	case State::Sprint:
+		startRecover(kRecoverTime);
+		break;
+	default:
+		velocity.x = 0.f;   // approach / lunge / knockback: stop at the edge
+		lungeSpeed = 0.f;
+		break;
 	}
-
 }
 
-sf::FloatRect wolf::getBounds()
-{
-	return wolfBox.getGlobalBounds();
-}
+// ---------------------------------------------------------------------
+// Accessors / Enemy interface
+// ---------------------------------------------------------------------
+sf::FloatRect wolf::getBounds() { return wolfBox.getGlobalBounds(); }
+sf::FloatRect wolf::getAttackBoxBounds() { return wolfAttackBox.getGlobalBounds(); }
+sf::FloatRect wolf::getEnemyRightLure() { return rightLureBox.getGlobalBounds(); }
+sf::FloatRect wolf::getEnemyLeftLure() { return leftLureBox.getGlobalBounds(); }
 
-sf::FloatRect wolf::getAttackBoxBounds()
-{
-	return this->wolfAttackBox.getGlobalBounds();
-}
+void wolf::setWolfVelocity(float) {}
 
-void wolf::setWolfVelocity(float x)
-{
-
-
-
-}
-
-void wolf::knightDamagedTrue()
-{
-	this->knightDamaged = true;
-
-	this->knockbackTimer = 0.3f;
-}
-
-void wolf::knightDamagedFalse()
-{
-	this->knightDamaged = false;
-
-}
-
-bool wolf::isDead()
-{
-	return dead;
-}
+void wolf::knightDamagedTrue() { knightDamaged = true; }
+void wolf::knightDamagedFalse() { knightDamaged = false; }
+bool wolf::isDead() { return dead; }
 
 void wolf::isHurtTrue()
 {
-	this->wolfHurt = true;
+	if (dead) return;
 
-	this->isKnockedBack = true;
+	chargeSound.stop();
+	suspenseSound.stop();
+	wolfHurt = true;
+	sprintAttacking = false;
+	pendingShieldKnockback = false;
+	lungeSpeed = 0.f;
 
-	this->knockbackTimer = 0.3f;
+	startKnockback(kHurtKnockback);
 }
 
-void wolf::isHurtFalse()
-{
-	this->wolfHurt = false;
-}
+void wolf::isHurtFalse() { wolfHurt = false; }
+void wolf::hitsShieldTrue() { wolfHitsShield = true; }
 
-enemyDirection wolf::getDirection()
-{
-	return lastDir;
-}
+enemyDirection wolf::getDirection() { return lastDir; }
+void wolf::setDirection(enemyDirection newDir) { lastDir = newDir; }
 
-void wolf::setDirection(enemyDirection newDir)
-{
-	this->lastDir = newDir;
-}
+Animation* wolf::getCurrentEnemyAnimation() { return currentAnimation; }
 
+bool wolf::setEnemyRightLure(bool value) { return rightLure = value; }
+bool wolf::setEnemyLeftLure(bool value) { return leftLure = value; }
 
-void wolf::hitsShieldTrue()
-{
+int wolf::getHealth() { return health; }
 
-	wolfHitsShield = true;
-}
-
-Animation* wolf::getCurrentEnemyAnimation()
-{
-	return this->currentAnimation2;
-}
-
-bool wolf::setEnemyRightLure(bool value)
-{
-	return this->rightLure = value;
-}
-
-bool wolf::setEnemyLeftLure(bool value)
-{
-	return this->leftLure = value;
-}
-
-
-
-int wolf::getHealth()
-{
-	return this->health;
-}
-
-sf::FloatRect wolf::getEnemyRightLure()
-{
-	return this->rightLureBox.getGlobalBounds();
-}
-
-sf::FloatRect wolf::getEnemyLeftLure()
-{
-	return this->leftLureBox.getGlobalBounds();
-}
-
-bool wolf::setInitializerBox(bool value)
-{
-	return false;
-}
-
-sf::FloatRect wolf::getIninitializerBox()
-{
-	return sf::FloatRect();
-}
-
-
+bool wolf::setInitializerBox(bool) { return false; }
+sf::FloatRect wolf::getIninitializerBox() { return sf::FloatRect(); }

@@ -10,7 +10,7 @@ class Skeleton : public Enemy
 
 public:
 
-	Skeleton(sf::Texture& idleTexture, sf::Texture& shot1Texture, sf::Texture& arrowTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, float x, float y, int arrowGravityLevel) :
+	Skeleton(sf::Texture& idleTexture, sf::Texture& shot1Texture, sf::Texture& arrowTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, const sf::Font standardFont, float x, float y, int arrowGravityLevel) :
 		Enemy(maxHealth),
 		arrowTex(arrowTexture),
 		bowShotSound(bowShotBuffer),
@@ -18,6 +18,7 @@ public:
 		boneCrackSound(boneCrackBuffer),
 		DeathSound(DeathBuffer)
 	{
+		damageFontText = standardFont;
 		changedGravity = arrowGravityLevel;
 
 		Idle = std::make_unique<Animation>(idleTexture, 7, 1, 0.2f, 0, false, true);
@@ -154,14 +155,16 @@ private:
 	bool leftLure = false;
 	bool rightLure = true;
 
-	int health = 60;
-	int maxHealth = 60;
+	int health = 80;
+	int maxHealth = 80;
 	bool dead = false;
 	bool isHurt = false;
 	bool arrowFired = false;
 	bool playOnce = false;
 	bool playSoundOnce = false;
 	int changedGravity = 0.f;
+
+	bool executeHurtSoundOnce = false;
 
 	void switchAnimation(Animation* newAnim) {
 

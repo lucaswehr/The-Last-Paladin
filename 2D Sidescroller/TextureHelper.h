@@ -51,3 +51,15 @@ struct backgroundTextures {
 struct GUITextures {
     sf::Texture& crownSpriteTex;
 };
+
+struct WolfTextures {
+    sf::Texture& wolfIdleTex;
+    sf::Texture& wolfWalkTex;
+    sf::Texture& wolfAttack1Tex;
+    sf::Texture& wolfAttack2Tex;
+    sf::Texture& wolfAttack3Tex;
+    sf::Texture& wolfDeathTex;
+    sf::Texture& wolfHurtTex;
+    sf::Texture& wolfSprintTex;
+    sf::Texture& wolfSprintAttackTex;
+};

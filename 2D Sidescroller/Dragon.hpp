@@ -9,7 +9,7 @@ class Dragon : public Enemy
 
 public:
 
-	Dragon(sf::Texture& idleTexture, sf::Texture& walkTexture, sf::Texture& attack2Texture, sf::Texture& dragonRiseTexture, sf::Texture& dragonFlightTexture, sf::Texture& dragonSpecialTexture, sf::Texture& dragonLandingTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, std::string& fontText, float x, float y, sf::Color& color) :
+	Dragon(sf::Texture& idleTexture, sf::Texture& walkTexture, sf::Texture& attack2Texture, sf::Texture& dragonRiseTexture, sf::Texture& dragonFlightTexture, sf::Texture& dragonSpecialTexture, sf::Texture& dragonLandingTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, std::string& fontText, const sf::Font standardFont, float x, float y, sf::Color& color) :
 		Enemy(-1), // Not used
 		dragonHurtSound(dragonHurtBuffer),
 		dragonHurtSound2(dragonHurtBuffer2),
@@ -22,10 +22,12 @@ public:
 		dragonFireSpecialSound(dragonFireSpecialBuffer),
 		dragonLandSound(dragonLandBuffer),
 		dragonScreamSound(dragonScreamBuffer),
-		dragonBar(1000,color,200,30),
+		dragonBar(1000, color, 200, 30),
 		name(fontText, "Ploopwing", 840, 800.f, sf::Color::White, 40)
 
 	{
+		damageFontText = standardFont;
+
 		Idle = std::make_unique<Animation>(idleTexture, 7, 1, 0.2f, 0, false, true);
 		Walk = std::make_unique<Animation>(walkTexture, 12, 1, 0.1f, 0, false, true);
 		Attack2 = std::make_unique<Animation>(attack2Texture, 10, 1, 0.07f, 0, false, false);
@@ -85,7 +87,7 @@ public:
 		IdleSprite.setOrigin({ IdleSprite.getLocalBounds().size.x * 0.5f, IdleSprite.getLocalBounds().position.x });
 
 		sf::Sprite& walkSprite = Walk->getSprite();
-		walkSprite.setOrigin({ walkSprite.getLocalBounds().size.x * 0.5f, walkSprite.getLocalBounds().position.x});
+		walkSprite.setOrigin({ walkSprite.getLocalBounds().size.x * 0.5f, walkSprite.getLocalBounds().position.x });
 
 		sf::Sprite& attack2Sprite = Attack2->getSprite();
 		attack2Sprite.setOrigin({ attack2Sprite.getLocalBounds().size.x - 170.f, attack2Sprite.getLocalBounds().position.x });
@@ -175,9 +177,7 @@ public:
 	sf::FloatRect getIninitializerBox() override;
 
 	void attackLogic(std::vector<Tile>& tiles, float dt);
-	void landingLogic(std::vector<Tile>& tiles);
 	void gravityLogic(std::vector<Tile>& tiles, float dt);
-	void flightAttackLogic(std::vector<Tile>& tiles, float dt);
 	void setBackgroundShape(sf::RectangleShape* bg);
 
 	sf::Music bossMusic;
@@ -207,6 +207,53 @@ public:
 
 private:
 
+	// ------------------------------------------------------------------
+	//  Air attack state machine
+	// ------------------------------------------------------------------
+	enum class AirState
+	{
+		None,
+		Takeoff,
+		SpecialFlight,   // hovering while the Flight animation plays, before the fire sweep
+		Special,         // fire sweep across the platform
+		SwoopClimb,
+		SwoopOut,
+		SwoopBack,
+		SwoopRise,
+		SwoopDive,
+		Landing
+	};
+
+	AirState airState = AirState::None;
+
+	float phaseTime = 0.f;   // seconds spent in the current air state
+	float airTimer = 0.f;   // counts up while the knight is lured (ground only)
+	float ledgeCooldown = 0.f;   // gap between ledge-forced take-offs
+	float hurtCooldown = 0.f;   // min time between damage ticks
+
+	bool hurtStun = false;   // Hurt animation currently playing
+	bool swoopAttack = false;   // current air attack is a swoop
+	bool whooshPlayed = false;
+	bool grounded = false;   // set by gravityLogic
+
+	// Tunables
+	static constexpr float airAttackInterval = 8.f;     // seconds of lure before a flight
+	static constexpr float ledgeCooldownTime = 5.f;     // gap between ledge take-offs
+	static constexpr float ledgeWarnDistance = 150.f;   // how far past the cliff probe counts as "near a ledge"
+	static constexpr float hurtCooldownTime = 0.5f;    // min time between damage ticks
+
+	void takeHit();
+	void updateAttackBox();
+	void turnAround();
+	bool isNearLedgeAhead(const std::vector<Tile>& tiles) const;
+	void startAirAttack(bool fromLedge, const std::vector<Tile>& tiles);
+	void enterAirState(AirState next);
+	void airAttackLogic(std::vector<Tile>& tiles, float dt);
+	void finishAirAttack();
+
+	// ------------------------------------------------------------------
+	//  Animations
+	// ------------------------------------------------------------------
 	std::unique_ptr<Animation> Idle;
 	std::unique_ptr<Animation> Walk;
 	std::unique_ptr<Animation> Attack1;
@@ -218,15 +265,18 @@ private:
 	std::unique_ptr<Animation> Hurt;
 	std::unique_ptr<Animation> Dead;
 
-	Animation* currentAnimation;
+	Animation* currentAnimation = nullptr;
 
+	// ------------------------------------------------------------------
+	//  Movement / combat state
+	// ------------------------------------------------------------------
 	sf::Vector2f velocity = { 0.f,0.f };
 	sf::Vector2f specialOffset = { 0.f,0.f };
 
-	enemyDirection lastDir;
+	enemyDirection lastDir = enemyDirection::Right;
 
-	float health = 200;
-	float maxHealth = 200.f;
+	float health = 250;
+	float maxHealth = 250.f;
 
 	sf::RectangleShape dragonBox;
 	sf::RectangleShape attackBox;
@@ -234,13 +284,13 @@ private:
 	sf::RectangleShape leftLureBox;
 	sf::RectangleShape rightLureBox;
 
-	sf::RectangleShape placeHolder;
+	sf::RectangleShape placeHolder;     // cliff probe
 
 	sf::RectangleShape attackInitializer;
-	sf::RectangleShape helper;
+	sf::RectangleShape helper;          // remembers last grounded position
 
 	bool dead = false;
-	bool isHurt;
+	bool isHurt = false;                // was uninitialized before
 	bool rightLure = false;
 	bool leftLure = false;
 	bool knightDamaged = false;
@@ -248,49 +298,20 @@ private:
 
 	sf::Clock dragonIdleClock;
 	sf::Time idleInterval = sf::milliseconds(20000);
-	bool idleWaiting = false;
 	bool isColliding = false;
 	bool isLanding = false;
-	bool playOnce2 = true;
-	bool playOnce3 = true;
 	bool isMoving = false;
 
 	const float gravity = 25.f;
 
-	sf::Clock dragonFlightClock;
-	sf::Time flightInterval = sf::milliseconds(40);
+	sf::Time waitInterval = sf::milliseconds(5000);    // swoop: climb duration
+	sf::Time waitInterval2 = sf::milliseconds(3700);   // swoop: first sweep duration
 
-	sf::Clock dragonWaitClock;
-	sf::Time waitInterval = sf::milliseconds(5000);
-
-	sf::Clock dragonWaitClock2;
-	sf::Time waitInterval2 = sf::milliseconds(3700);
-
-	bool playOnce = true;
-
-	int counter = 0;
-
-	bool playOnce4 = false;
-	bool playOnce5 = true;
-	bool playOnce6 = true;
-	bool playOnce7 = true;
-	bool playOnce8 = true;
-	bool playOnce9 = true;
-	bool playOnce10 = true;
-	bool playOnce11 = true;
-	bool playOnce12 = true;
-	bool playOnce13 = true;
-	bool playOnce14 = true;
-	bool playOnce15 = true;
-	bool playOnce16 = true;
-	bool playOnce17 = true;
-	bool playOnce18 = true;
-	bool teleported = false;
+	bool playOnce4 = false;    // death
+	bool playOnce9 = true;     // ground flame sound
+	bool playOnce16 = true;    // boss music
 
 	bool fightStarted = false;
-
-	bool teleported2 = false;
-	int random = std::rand() % 4;
 
 	Healthbar dragonBar;
 	sf::RectangleShape* background = nullptr;

@@ -9,22 +9,9 @@
 #include "Enemy.hpp"
 #include "Arrow.hpp"
 #include "text.hpp"
+#include "DamageNumber.hpp"
 
 using namespace std;
-
-struct DamageNumber
-{
-    sf::Text text;
-    sf::Vector2f velocity;
-    float lifetime = 0.8f;
-    float maxLifetime = 0.8f;
-
-    DamageNumber(sf::Font& standardFont) :
-        text(standardFont)
-    {
-    }
-};
-
 
 class Client;
 
@@ -224,7 +211,6 @@ public:
     sf::Music music;
     sf::Music deathMusic;
 
-  //  Text healthText;
     Text potionNumText;
     Text ending;
 

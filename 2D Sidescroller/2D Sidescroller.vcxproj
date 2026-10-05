@@ -146,6 +146,7 @@
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="DeflectionDemo.cpp" />
     <ClCompile Include="Dragon.cpp" />
+    <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Knight.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="LobbyClient.cpp" />
@@ -164,6 +165,7 @@
     <ClInclude Include="AssetManager.hpp" />
     <ClInclude Include="attackData.h" />
     <ClInclude Include="CharacterType.h" />
+    <ClInclude Include="DamageNumber.hpp" />
     <ClInclude Include="DebugOverlay.hpp" />
     <ClInclude Include="DeflectionDemo.hpp" />
     <ClInclude Include="Dragon.hpp" />

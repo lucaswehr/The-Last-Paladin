@@ -13,6 +13,7 @@ public:
     samuraiTextures getSamuraiTextures();
     backgroundTextures getBackgroundTextures();
     GUITextures getGUITextures();
+    WolfTextures getWolfTextures();
 
 private:
 
@@ -65,4 +66,15 @@ private:
 
     // GUI Elements
     sf::Texture crownSpriteTex;
+
+    // Wolf Textures
+    sf::Texture wolfIdleTex;
+    sf::Texture wolfWalkTex;
+    sf::Texture wolfAttack1Tex;
+    sf::Texture wolfAttack2Tex;
+    sf::Texture wolfAttack3Tex;
+    sf::Texture wolfDeathTex;
+    sf::Texture wolfHurtTex;
+    sf::Texture wolfSprintTex;
+    sf::Texture wolfSprintAttackTex;
 };

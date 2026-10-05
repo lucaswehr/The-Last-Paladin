@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
 
-    sf::RenderWindow window(desktopMode, "The Last Paladin", sf::Style::Default);
+    sf::RenderWindow window(desktopMode, "The Last Paladin", sf::Style::Default, sf::State::Fullscreen);
     window.setVerticalSyncEnabled(true);
     window.setMouseCursorVisible(false);
 
@@ -521,42 +521,6 @@ int main(int argc, char** argv)
     if (!bush.loadFromFile("tileset/grass.png"))
     {
         std::cout << "error loading the knight bush sprite" << std::endl;
-    }
-
-    sf::Texture enemy;
-    if (!enemy.loadFromFile("wolf/walk.png"))
-    {
-        std::cout << "error loading the wolf walk sprite" << std::endl;
-    }
-
-    sf::Texture enemyAttack1;
-    if (!enemyAttack1.loadFromFile("wolf/attack_1.png"))
-    {
-        std::cout << "error loading the wolf attack1 sprite" << std::endl;
-    }
-
-    sf::Texture enemyAttack2;
-    if (!enemyAttack2.loadFromFile("wolf/attack_2.png"))
-    {
-        std::cout << "error loading the wolf attack2 sprite" << std::endl;
-    }
-
-    sf::Texture enemyAttack3;
-    if (!enemyAttack3.loadFromFile("wolf/attack_3.png"))
-    {
-        std::cout << "error loading the wolf attack3 sprite" << std::endl;
-    }
-
-    sf::Texture dead;
-    if (!dead.loadFromFile("wolf/dead.png"))
-    {
-        std::cout << "error loading the wolf dead sprite" << std::endl;
-    }
-
-    sf::Texture wolfHurt;
-    if (!wolfHurt.loadFromFile("wolf/hurt.png"))
-    {
-        std::cout << "error loading the wolf hurt sprite" << std::endl;
     }
 
     sf::Texture SkeletonIdle;
@@ -1664,14 +1628,14 @@ int main(int argc, char** argv)
          
             singlePlayerKnight->resetPlayer({ 400.f, 1825.f }, true);
 
-            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, 5560.f, 1825.f, 2));
-            enemies.emplace_back(std::make_unique<wolf>(enemy, enemyAttack1, enemyAttack2, enemyAttack3, dead, wolfHurt, 3500.f, 2115.f));
-            enemies.emplace_back(std::make_unique<wolf>(enemy, enemyAttack1, enemyAttack2, enemyAttack3, dead, wolfHurt, 2500.f, 1635.f));
-            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, 7892.f, 1060.f, 1));
-            enemies.emplace_back(std::make_unique<wolf>(enemy, enemyAttack1, enemyAttack2, enemyAttack3, dead, wolfHurt, 7300.f, 1346.f));
-            enemies.emplace_back(std::make_unique<wolf>(enemy, enemyAttack1, enemyAttack2, enemyAttack3, dead, wolfHurt, 7200.f, 100.f));
-            enemies.emplace_back(std::make_unique<wolf>(enemy, enemyAttack1, enemyAttack2, enemyAttack3, dead, wolfHurt,  9000.f, 100.f));
-            enemies.emplace_back(std::make_unique<Dragon>(dragonIdle, dragonWalk, dragonAttack2, dragonRise, dragonFlight, dragonSpecial, dragonLanding, dragonHurt, dragonDead, fancyFontText, 14000.f, 100.f,singlePlayerColor));
+            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 5560.f, 1825.f, 2));
+            enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(),standardFont, 4100.f, 2115.f));
+            enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 3000.f, 1635.f));
+            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 7892.f, 1060.f, 1));
+            enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 7300.f, 1346.f));
+            enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 7100.f, 100.f));
+            enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 9000.f, 100.f));
+            enemies.emplace_back(std::make_unique<Dragon>(dragonIdle, dragonWalk, dragonAttack2, dragonRise, dragonFlight, dragonSpecial, dragonLanding, dragonHurt, dragonDead, fancyFontText, standardFont, 14000.f, 100.f,singlePlayerColor));
            
             pendingReset = false;
 
@@ -1843,30 +1807,7 @@ int main(int argc, char** argv)
                     window.setMouseCursorVisible(false);
 
                 }
-
-                window.draw(backgroundShape);
-
-                singlePlayerLevel.draw(window,tiles,decorationTiles);
-
-                singlePlayerKnight->draw(window);         
-
-                for (auto& enemy : enemies)
-                {
-                    enemy->draw(window);
-                }
-
-                for (const auto& arrow2 : arrows)
-                {
-                    window.draw(arrow2.sprite);
-                    window.draw(arrow2.arrowBox);
-
-                }
-
-                window.draw(inventory);
-                window.draw(singlePlayerPotionSprite);
-
-                singlePlayerKnight->potionNumText.draw(window);
-
+                          
                 singlePlayerKnight->updateSinglePlayer(deltaTime, tiles, enemies, arrows, standardFont);
            
 
@@ -1878,8 +1819,6 @@ int main(int argc, char** argv)
                     {
                         gameState = GameState::paused;
                     }
-
-
                 }
           
                 for (auto it = arrows.begin(); it != arrows.end(); )
@@ -1931,11 +1870,11 @@ int main(int argc, char** argv)
                 }
 
           
-                float halfWindowWidth = windowWidth / 2.f;
-                if (target.x < halfWindowWidth)
-                    target.x = halfWindowWidth;
-                if (target.x > worldWidth - halfWindowWidth)
-                    target.x = worldWidth - halfWindowWidth;
+                float halfViewWidth = gameView.getSize().x / 2.f;
+                if (target.x < halfViewWidth)
+                    target.x = halfViewWidth;
+                if (target.x > worldWidth - halfViewWidth)
+                    target.x = worldWidth - halfViewWidth;
 
                 // Smoothly move the current center toward the target
                 center.x += (target.x - center.x) * lerpSpeed * deltaTime;
@@ -2003,6 +1942,26 @@ int main(int argc, char** argv)
                 singlePlayerKnight->potionNumText.setPosition( backgroundShape.getPosition().x + 100, backgroundShape.getPosition().y + 975 );
 
                 inventory.setPosition({ backgroundShape.getPosition().x + 20, backgroundShape.getPosition().y + 850 });
+
+                window.draw(backgroundShape);
+
+                singlePlayerLevel.draw(window, tiles, decorationTiles);
+
+                singlePlayerKnight->draw(window);
+
+                for (auto& enemy : enemies)
+                {
+                    enemy->draw(window);
+                }
+
+                for (const auto& arrow2 : arrows)
+                {
+                    window.draw(arrow2.sprite);
+                }
+
+                window.draw(inventory);
+                window.draw(singlePlayerPotionSprite);
+                singlePlayerKnight->potionNumText.draw(window);
 
                 singlePlayerKnight->getHealthBar().draw(window);
                 window.draw(heartSprite);

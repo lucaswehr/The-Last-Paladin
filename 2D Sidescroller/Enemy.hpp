@@ -3,6 +3,7 @@
 #include "Animation.hpp"
 #include "Tile.hpp"
 #include "Healthbar.hpp"
+#include "DamageNumber.hpp"
 
 enum class enemyDirection {
 	Left,
@@ -40,7 +41,13 @@ public:
 	virtual bool setInitializerBox(bool value) = 0;
 	virtual sf::FloatRect getIninitializerBox() = 0;
 
+	void getKnightDamage(int damage) { knightDamage = damage; };
+	DamageNumber createDamageNumberText(sf::Font& standardFont, std::string message, int scaleX, int scaleY, sf::Color color, sf::Vector2f position);
+	void updateDamageText(float dt);
+
 protected:
 	Healthbar healthbar;
-
+	int knightDamage;
+	std::vector<DamageNumber> damageNumbers;
+	sf::Font damageFontText;
 };

@@ -128,7 +128,6 @@ public:
 
 	void updateSinglePlayer(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies, std::vector<Arrow>& arrows, sf::Font& standardFont) override
 	{
-		cout << playerBox.getPosition().y << endl;
 		potionNumText.setString(std::to_string(potionNumber));
 
 		rightLureBox.setPosition({ currentAnimation->getSprite().getPosition() });
@@ -470,6 +469,8 @@ private:
 	bool wolfLeft = false;
 
 	bool playSoundOnce = false;
+
+	int deflectedArrowDamage = 35;
 
 	sf::RectangleShape rightLureBox;
 	sf::RectangleShape leftLureBox;

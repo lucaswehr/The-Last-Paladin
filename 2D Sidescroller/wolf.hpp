@@ -2,121 +2,86 @@
 #include "Enemy.hpp"
 #include "Animation.hpp"
 #include "Tile.hpp"
+#include "AssetManager.hpp"
 #include <memory>
+#include <iostream>
 
 class wolf : public Enemy
 {
 public:
 
-	wolf(sf::Texture& walk2, sf::Texture& textureAttack1, sf::Texture& textureAttack2, sf::Texture& textureAttack3, sf::Texture& textureDeath, sf::Texture& textureHurt, float x, float y) :
-		Enemy(maxHealth),
+	wolf(const WolfTextures& t, const sf::Font& standardFont, float x, float y) :
+		Enemy(kMaxHealth),
 		hurtSound1(hurtBuffer1),
 		hurtSound2(hurtBuffer2),
-		deathSound(deathBuffer)
+		deathSound(deathBuffer),
+		chargeSound(chargeBuffer),
+		suspenseSound(suspenseBuffer)
 	{
-		if (!hurtBuffer1.loadFromFile("Sounds/NEWwolfHurt2.wav"))
-			std::cerr << "Failed to load NEWwolfHurt2.wav\n";
-		hurtSound1.setBuffer(hurtBuffer1);
 
-		if (!hurtBuffer2.loadFromFile("Sounds/wolfHurt1.wav"))
-			std::cerr << "Failed to load wolfHurt1.wav\n";
-		hurtSound2.setBuffer(hurtBuffer2);
+		damageFontText = standardFont;
+		loadSound(hurtBuffer1, hurtSound1, "Sounds/NEWwolfHurt2.wav");
+		loadSound(hurtBuffer2, hurtSound2, "Sounds/wolfHurt1.wav");
+		loadSound(deathBuffer, deathSound, "Sounds/wolfDeath.wav");
+		loadSound(chargeBuffer, chargeSound, "Sounds/wolfChargeSound.mp3");
+		loadSound(suspenseBuffer, suspenseSound, "Sounds/wolfSuspenseSound.mp3");
 
-		if (!deathBuffer.loadFromFile("Sounds/wolfDeath.wav"))
-			std::cerr << "Failed to load wolfDeath.wav\n";
-		deathSound.setBuffer(deathBuffer);
+		// texture, frames, rows, frameTime, ?, ?, loop
+		idleAnim = std::make_unique<Animation>(t.wolfIdleTex, 8, 1, 0.2f, 0, false, true); // <-- set the real frame count
+		walk = std::make_unique<Animation>(t.wolfWalkTex, 11, 1, 0.10f, 0, false, true);
+		attack1 = std::make_unique<Animation>(t.wolfAttack1Tex, 6, 1, 0.10f, 0, false, false);
+		attack2 = std::make_unique<Animation>(t.wolfAttack2Tex, 4, 1, 0.15f, 0, false, false);
+		attack3 = std::make_unique<Animation>(t.wolfAttack3Tex, 5, 1, 0.10f, 0, false, false);
+		death = std::make_unique<Animation>(t.wolfDeathTex, 2, 1, 0.15f, 0, false, false);
+		hurt = std::make_unique<Animation>(t.wolfHurtTex, 2, 1, 0.20f, 0, false, true);
+		sprintAnim = std::make_unique<Animation>(t.wolfSprintTex, 9, 1, 0.1f, 0, false, true);
+		sprintAttackAnim = std::make_unique<Animation>(t.wolfSprintAttackTex, 7, 1, 0.05f, 0, false, false);
 
-		walk = std::make_unique<Animation>(walk2, 11, 1, 0.1f, 0, false, true);
-		attack1 = std::make_unique<Animation>(textureAttack1, 6, 1, 0.1f, 0, false, false);
-		attack2 = std::make_unique<Animation>(textureAttack2, 4, 1, 0.15f, 0, false, false);
-		attack3 = std::make_unique<Animation>(textureAttack3, 5, 1, 0.1f, 0, false, false);
-		death = std::make_unique<Animation>(textureDeath, 2, 1, 0.15f, 0, false, false);
-		hurt = std::make_unique<Animation>(textureHurt, 2, 1, 0.2f, 0, false, true);
-		currentAnimation2 = walk.get();
+		for (Animation* a : { idleAnim.get(), walk.get(), attack1.get(), attack2.get(), attack3.get(),
+							  death.get(), hurt.get(), sprintAnim.get(), sprintAttackAnim.get() })
+		{
+			sf::Sprite& s = a->getSprite();
+			s.setOrigin({ s.getLocalBounds().size.x * 0.5f, s.getLocalBounds().position.x + 128.f });
+		}
 
-		currentAnimation2->getSprite().setPosition({ x,y });
-		wolfBox.setFillColor(sf::Color(255, 0, 0, 128));
-		wolfBox.setSize({ 40.f,40.f });
-		wolfBox.setScale({ 2,3 });
-		wolfBox.setOrigin({ 20,42 });
-		currentAnimation2->getSprite().setScale({ 1.5,1.5 });
+		currentAnimation = idleAnim.get();
+		currentAnimation->getSprite().setPosition({ x, y });
+		currentAnimation->getSprite().setScale({ kSpriteScale, kSpriteScale });
 
-		wolfAttackBox.setFillColor(sf::Color(255, 0, 0, 128));
-		wolfAttackBox.setSize({ 30.f,30.f });
-		wolfAttackBox.setScale({ 2,3 });
-		wolfAttackBox.setOrigin({ 15,42 });
-
-		rightLureBox.setSize({ 300.f, 10.f });
-		rightLureBox.setScale({ 2,2.5 });
-		rightLureBox.setOrigin({ -20.f, 30.f });
-		rightLureBox.setFillColor(sf::Color(255, 0, 0, 128));
-
-		leftLureBox.setSize({ -300.f, 10.f });
-		leftLureBox.setScale({ 2,2.5 });
-		leftLureBox.setOrigin({ 20.f, 30.f });
-		leftLureBox.setFillColor(sf::Color(255, 0, 0, 128));
-
-		sf::Sprite& walkSprite = walk->getSprite();
-		walkSprite.setOrigin({ walkSprite.getLocalBounds().size.x * 0.5f, walkSprite.getLocalBounds().position.x + 128.f });
-
-		sf::Sprite& attackSprite = attack1->getSprite();
-		attackSprite.setOrigin({ attackSprite.getLocalBounds().size.x * 0.5f, attackSprite.getLocalBounds().position.x + 128.f });
-
-		sf::Sprite& attack2Sprite = attack2->getSprite();
-		attack2Sprite.setOrigin({ attack2Sprite.getLocalBounds().size.x * 0.5f, attack2Sprite.getLocalBounds().position.x + 128.f });
-
-		sf::Sprite& attack3Sprite = attack3->getSprite();
-		attack3Sprite.setOrigin({ attack3Sprite.getLocalBounds().size.x * 0.5f, attack3Sprite.getLocalBounds().position.x + 128.f });
-
-		sf::Sprite& deathSprite = death->getSprite();
-		deathSprite.setOrigin({ deathSprite.getLocalBounds().size.x * 0.5f, deathSprite.getLocalBounds().position.x + 128.f });
-
-		sf::Sprite& hurtSprite = hurt->getSprite();
-		hurtSprite.setOrigin({ hurtSprite.getLocalBounds().size.x * 0.5f, hurtSprite.getLocalBounds().position.x + 128.f });
-
+		setupBox(wolfBox, { 40.f, 40.f }, { 2.f, 3.f }, { 20.f, 42.f });
+		setupBox(wolfAttackBox, { 30.f, 30.f }, { 2.f, 3.f }, { 15.f, 42.f });
+		setupBox(rightLureBox, { 400.f, 10.f }, { 2.f, 2.5f }, { -20.f, 30.f });
+		setupBox(leftLureBox, { -400.f, 10.f }, { 2.f, 2.5f }, { 20.f, 30.f });
 
 		lastDir = enemyDirection::Right;
-
+		state = State::Idle; // starts standing still until the knight enters a lure box
 	}
 
-	//walk.getSprite().setOrigin()
-
 	void draw(sf::RenderWindow& window);
-
 	void update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies) override;
 
 	void checkCollision(std::vector<Tile>& tiles) override;
-
 	void checkForCliff(std::vector<Tile>& tiles) override;
 
 	sf::FloatRect getBounds() override;
-
 	sf::FloatRect getAttackBoxBounds() override;
 
 	void setWolfVelocity(float x);
 
 	void knightDamagedTrue() override;
-
 	void knightDamagedFalse() override;
 
 	bool isDead();
-
 	void isHurtTrue();
-
 	void isHurtFalse();
+	void hitsShieldTrue();
 
 	enemyDirection getDirection() override;
-
 	void setDirection(enemyDirection newDir) override;
-
-	void initializeSounds();
-
-	void hitsShieldTrue();
 
 	Animation* getCurrentEnemyAnimation() override;
 
 	bool setEnemyRightLure(bool value) override;
-
 	bool setEnemyLeftLure(bool value) override;
 
 	int getHealth() override;
@@ -127,62 +92,117 @@ public:
 	bool setInitializerBox(bool value) override;
 	sf::FloatRect getIninitializerBox() override;
 
+	// True while the current attack is the sprint lunge (for bonus damage/knockback).
+	bool isSprintAttacking() const { return state == State::Attack && sprintAttacking; }
+
 	bool pendingShieldKnockback = false;
-	Animation* currentAnimation2;
-	sf::Vector2f velocity = { 3.f, 0.f };
+	Animation* currentAnimation;
+	sf::Vector2f velocity = { 0.f, 0.f };
 	enemyDirection lastDir;
 
 private:
 
-	std::unique_ptr<Animation> walk;
-	std::unique_ptr<Animation> attack1;
-	std::unique_ptr<Animation> attack2;
-	std::unique_ptr<Animation> attack3;
-	std::unique_ptr<Animation> death;
-	std::unique_ptr<Animation> hurt;
+	// ---- tuning -------------------------------------------------------
+	static constexpr int   kMaxHealth = 100;
+	static constexpr float kSpriteScale = 1.5f;
+	static constexpr float kWalkSpeed = 3.f;
+	static constexpr float kSprintSpeed = 16.f;
+	static constexpr float kKnockbackSpeed = 5.f;
+	static constexpr float kWindupTime = 0.8f;
+	static constexpr float kSprintMaxTime = 3.0f;
+	static constexpr float kRecoverTime = 0.6f;
+	static constexpr float kLungeDecay = 30.f;  // px/frame lost per second
+	static constexpr int   kSprintChancePct = 75;
+	static constexpr float kHurtKnockback = 0.3f;
+	static constexpr float kShieldKnockback = 0.5f;
+	static constexpr int   kHurtDamage = 20;
+	static constexpr float kTurnPauseTime = 0.7f;
 
-	sf::RectangleShape wolfBox;
-	sf::RectangleShape wolfAttackBox;
-	sf::RectangleShape leftLureBox;
-	sf::RectangleShape rightLureBox;
+	//  Idle      spawn state, stands still until the knight enters a lure box
+	//  Patrol    walks back and forth (knight is out of range)
+	//  Approach  knight in lure box: walks up and attacks normally
+	//  Windup    knight in lure box: telegraph before the sprint
+	//  Sprint    charges the knight
+	//  Attack    attack animation (sprint attack keeps lunging)
+	//  Recover   short pause after a sprint
+	//  Knockback pushed back by a hit or a blocked attack
+	//  Dead
+	enum class State { Idle, Patrol, Approach, Windup, Sprint, Attack, Turn, Recover, Knockback, Dead };
+	State state = State::Idle;
 
-	bool active = false;
-	bool isKnockedBack = false;
+	std::unique_ptr<Animation> idleAnim, walk, attack1, attack2, attack3, death, hurt, sprintAnim, sprintAttackAnim;
+	sf::RectangleShape wolfBox, wolfAttackBox, leftLureBox, rightLureBox;
+
 	bool knightDamaged = false;
-	bool wolfDeath = false;
-	bool playAnimationOnce = false;
+	bool wolfHurt = false;
+	bool wolfHitsShield = false;
+	bool sprintAttacking = false;
+	bool rightLure = false;
+	bool leftLure = false;
+	bool playOnce = false;          // damage/sound applied for the current hit
+	bool playAnimationOnce = false; // death started
 	bool dead = false;
+	bool sprintOnce = false;
+
 	float knockbackTimer = 0.f;
 	float attackCooldown = 0.f;
 	float attackDelay = 1.0f;
-	bool right = true;
-	int hitsToKill = 0;
-	int health = 100;
-	int maxHealth = 100;
+	float windupTimer = 0.f;
+	float sprintTimer = 0.f;
+	float turnTimer = 0.f;
+	float recoverTimer = 0.f;
+	float lungeSpeed = 0.f;
 
-	bool wolfHurt = false;
-	bool wolfHitsShield = false;
-	bool isAttacking = false;
+	int health = kMaxHealth;
+	int maxHealth = kMaxHealth;
 
-	bool rightLure = false;
-	bool leftLure = false;
+	sf::SoundBuffer hurtBuffer1, hurtBuffer2, deathBuffer, chargeBuffer, suspenseBuffer;
+	sf::Sound hurtSound1, hurtSound2, deathSound, chargeSound, suspenseSound;
 
-	sf::SoundBuffer hurtBuffer1;
-	sf::SoundBuffer hurtBuffer2;
-	sf::SoundBuffer deathBuffer;
+	// ---- helpers ------------------------------------------------------
+	float dirSign() const { return lastDir == enemyDirection::Right ? 1.f : -1.f; }
+	bool  inLure() const { return rightLure || leftLure; }
+	bool  inContact() const { return knightDamaged || wolfHitsShield; }
 
-	sf::Sound hurtSound1;
-	sf::Sound hurtSound2;
-	sf::Sound deathSound;
-	
-	bool playOnce = false;
+	void updateBoundryBoxes();
+	bool handleDeathLogic(float dt);
+	void handleHurtLogic();
+	void applyFacing();
+	void faceKnight();
+	bool groundAhead(std::vector<Tile>& tiles);
 
-	void switchAnimation2(Animation* newAnim) {
+	void engageKnight();   // knight entered lure: pick normal approach or sprint
+	void startSprint();
+	void startAttack(bool sprinting);
+	void finishAttack();
+	void startRecover(float time);
+	void startKnockback(float time);
+	void turnAround();
+	bool knightBehind();
 
-		if (currentAnimation2 != newAnim) {
-			sf::Vector2f pos = currentAnimation2->getSprite().getPosition();
-			currentAnimation2 = newAnim;
-			currentAnimation2->getSprite().setPosition(pos);
+
+	void switchAnimation(Animation* newAnim)
+	{
+		if (currentAnimation != newAnim)
+		{
+			sf::Vector2f pos = currentAnimation->getSprite().getPosition();
+			currentAnimation = newAnim;
+			currentAnimation->getSprite().setPosition(pos);
 		}
+	}
+
+	static void setupBox(sf::RectangleShape& box, sf::Vector2f size, sf::Vector2f scale, sf::Vector2f origin)
+	{
+		box.setSize(size);
+		box.setScale(scale);
+		box.setOrigin(origin);
+		box.setFillColor(sf::Color(255, 0, 0, 128));
+	}
+
+	static void loadSound(sf::SoundBuffer& buffer, sf::Sound& sound, const char* path)
+	{
+		if (!buffer.loadFromFile(path))
+			std::cerr << "Failed to load " << path << "\n";
+		sound.setBuffer(buffer);
 	}
 };
