@@ -15,8 +15,12 @@ class Enemy
 public:
 
 	Enemy(int maxHealth) :
-	 healthbar(100, sf::Color(170, 20, 20), maxHealth, 5)
-	{}
+	 healthbar(100, sf::Color(170, 20, 20), maxHealth, 5),
+	 swordHitFleshSound1(swordHitFleshBuffer1),
+	 swordHitFleshSound2(swordHitFleshBuffer2)
+	{
+		initializeSounds();
+	}
 
 	virtual void update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies) = 0;
 	virtual void draw(sf::RenderWindow& window) = 0;
@@ -45,9 +49,14 @@ public:
 	DamageNumber createDamageNumberText(sf::Font& standardFont, std::string message, int scaleX, int scaleY, sf::Color color, sf::Vector2f position);
 	void updateDamageText(float dt);
 
+	void initializeSounds();
+
 protected:
 	Healthbar healthbar;
 	int knightDamage;
 	std::vector<DamageNumber> damageNumbers;
 	sf::Font damageFontText;
+
+	sf::SoundBuffer swordHitFleshBuffer1, swordHitFleshBuffer2;
+	sf::Sound swordHitFleshSound1, swordHitFleshSound2;
 };

@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
 
-    sf::RenderWindow window(desktopMode, "The Last Paladin", sf::Style::Default, sf::State::Fullscreen);
+    sf::RenderWindow window(desktopMode, "The Last Paladin", sf::Style::Default);
     window.setVerticalSyncEnabled(true);
     window.setMouseCursorVisible(false);
 

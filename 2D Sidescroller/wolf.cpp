@@ -313,9 +313,15 @@ void wolf::handleHurtLogic()
 		return;
 
 	if (std::rand() % 2 == 0)
+	{
+		swordHitFleshSound1.play();
 		hurtSound1.play();
+	}
 	else
+	{
+		swordHitFleshSound2.play();
 		hurtSound2.play();
+	}
 
 	playOnce = true;
 	health -= knightDamage;

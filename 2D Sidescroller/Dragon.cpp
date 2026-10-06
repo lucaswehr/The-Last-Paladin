@@ -23,6 +23,9 @@ void Dragon::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_
 	if (hurtCooldown > 0.f)
 		hurtCooldown -= dt;
 
+	if (staggerCooldown > 0.f)
+		staggerCooldown -= dt;
+
 	if (ledgeCooldown > 0.f && airState == AirState::None)
 		ledgeCooldown -= dt;
 
@@ -35,7 +38,14 @@ void Dragon::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_
 		currentAnimation == Special.get() ||
 		currentAnimation == Landing.get();
 
-	dragonBox.setPosition({ pos.x, raised ? pos.y - 100.f : pos.y });
+	float boxY = pos.y;
+	if (currentAnimation == Flight.get() || currentAnimation == Takeoff.get() || currentAnimation == Special.get())
+		boxY -= 100.f;
+	else if (currentAnimation == Landing.get())
+		boxY += landingBoxOffset;
+
+	dragonBox.setPosition({ pos.x, boxY });
+
 	placeHolder.setPosition({ pos.x, raised ? pos.y + 250.f : pos.y });
 
 	// helper remembers the last grounded position (swoop teleports are relative to it)
@@ -76,11 +86,24 @@ void Dragon::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_
 	}
 
 	// ---- Incoming hit -----------------------------------------------------
+	// ---- Incoming hit -----------------------------------------------------
 	if (isHurt)
 	{
 		isHurt = false;
+
 		if (!dead && hurtCooldown <= 0.f)
+		{
 			takeHit();
+
+			// Count only registered hits, and only while grounded
+			if (health > 0 && airState == AirState::None)
+			{
+				hitsTaken++;
+
+				if (hitsTaken >= hitsTakenToFly)
+					startAirAttack(false, tiles);   // resets hitsTaken (see below)
+			}
+		}
 	}
 
 	// ---- Hurt animation finished ------------------------------------------
@@ -94,15 +117,14 @@ void Dragon::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_
 		{
 			velocity.x = 0.f;
 			Hurt->reset();
-			hurtStun = false;
-			switchAnimation(Idle.get());
+			hurtStun = false;		
 		}
 	}
 
 	// ---- Behaviour --------------------------------------------------------
-	if (!dead && !hurtStun)
+	if (!dead)
 	{
-		if (airState == AirState::None)
+		if (airState == AirState::None && !hurtStun)
 		{
 			checkCollision(tiles);
 			checkForCliff(tiles);
@@ -168,13 +190,13 @@ void Dragon::draw(sf::RenderWindow& window)
 		window.draw(damageNumber.text);
 	}
 
-	//window.draw(placeHolder);
-	//window.draw(dragonBox);
-	//window.draw(this->rightLureBox);
-	//window.draw(this->leftLureBox);
-	//window.draw(attackBox);
-	//window.draw(attackInitializer);
-	//window.draw(helper);
+	/*window.draw(placeHolder);
+	window.draw(dragonBox);
+	window.draw(this->rightLureBox);
+	window.draw(this->leftLureBox);
+	window.draw(attackBox);
+	window.draw(attackInitializer);
+	window.draw(helper);*/
 }
 
 // ============================================================================
@@ -280,7 +302,7 @@ void Dragon::takeHit()
 	hurtCooldown = hurtCooldownTime;
 	health -= knightDamage;
 
-	sf::Vector2f pos = { dragonBox.getPosition().x, dragonBox.getPosition().y + 50 };
+	sf::Vector2f pos = { dragonBox.getPosition().x, dragonBox.getPosition().y + 250 };
 	damageNumbers.push_back(std::move(
 		createDamageNumberText(damageFontText, "-" + std::to_string(knightDamage), 3, 3, sf::Color::Red, pos)));
 
@@ -293,8 +315,10 @@ void Dragon::takeHit()
 	else             dragonHurtSound3.play();
 
 	// Only stagger on the ground and not in the middle of a flame attack.
-	if (airState == AirState::None && currentAnimation != Attack2.get())
+	if (airState == AirState::None && currentAnimation != Attack2.get() && staggerCooldown <= 0.f && !initalizer)
 	{
+		staggerCooldown = staggerCooldownTime;
+		
 		hurtStun = true;
 		Hurt->reset();
 		switchAnimation(Hurt.get());
@@ -357,6 +381,12 @@ void Dragon::attackLogic(std::vector<Tile>& tiles, float dt)
 
 	const bool knightInArena = leftLure || rightLure;
 	bool flameCycleDone = false;
+
+	if (hurtStun)
+	{
+		hurtStun = false;
+		Hurt->reset();
+	}
 
 	// ---- Ground flame attack (knight stepped into the initializer box) -----
 	if (initalizer)
@@ -430,6 +460,13 @@ void Dragon::turnAround()
 void Dragon::startAirAttack(bool fromLedge, const std::vector<Tile>& tiles)
 {
 	airTimer = 0.f;
+	hitsTaken = 0;
+
+	if (hurtStun)
+	{
+		hurtStun = false;
+		Hurt->reset();
+	}
 
 	// 1 in 4 timer-based attacks is a swoop. Ledge escapes are never swoops.
 	swoopAttack = !fromLedge && (std::rand() % 4 == 3);

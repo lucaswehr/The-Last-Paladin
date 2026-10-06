@@ -230,6 +230,9 @@ private:
 	float airTimer = 0.f;   // counts up while the knight is lured (ground only)
 	float ledgeCooldown = 0.f;   // gap between ledge-forced take-offs
 	float hurtCooldown = 0.f;   // min time between damage ticks
+	float staggerCooldown = 0.f;
+	static constexpr float staggerCooldownTime = 1.5f;
+	static constexpr float landingBoxOffset = 0.f;   // negative = up, positive = down
 
 	bool hurtStun = false;   // Hurt animation currently playing
 	bool swoopAttack = false;   // current air attack is a swoop
@@ -303,6 +306,9 @@ private:
 	bool isMoving = false;
 
 	const float gravity = 25.f;
+
+	int hitsTakenToFly = 2;
+	int hitsTaken = 0;
 
 	sf::Time waitInterval = sf::milliseconds(5000);    // swoop: climb duration
 	sf::Time waitInterval2 = sf::milliseconds(3700);   // swoop: first sweep duration

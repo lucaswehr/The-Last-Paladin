@@ -54,3 +54,15 @@ void Enemy::updateDamageText(float dt)
 		}
 	}
 }
+
+void Enemy::initializeSounds()
+{
+	this->swordHitFleshBuffer1.loadFromFile("Sounds/swordHitFlesh1.mp3");
+	this->swordHitFleshSound1.setBuffer(swordHitFleshBuffer1);
+
+	this->swordHitFleshBuffer2.loadFromFile("Sounds/swordHitFlesh2.mp3");
+	this->swordHitFleshSound2.setBuffer(swordHitFleshBuffer2);
+
+	swordHitFleshSound1.setVolume(50.f);
+	swordHitFleshSound2.setVolume(50.f);
+}
