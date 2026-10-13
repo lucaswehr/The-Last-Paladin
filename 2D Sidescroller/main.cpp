@@ -104,13 +104,6 @@ int main(int argc, char** argv)
         unsigned short gamePort = 54000; 
         unsigned short lobbyPort = 54001;  
 
-      
-      /*  if (argc > 1 && std::string(argv[1]) == "lobby")
-        {
-            LobbyServer lobby;
-            lobby.start(lobbyPort);
-            return 0;
-        }*/
         if (argc > 1 && std::string(argv[1]) == "server")
         {
             ServerInfo info;
@@ -184,8 +177,8 @@ int main(int argc, char** argv)
 
     sf::Clock networkClock;
 
-    sf::Font font;
-    if (!font.openFromFile("Fonts/OldLondon.ttf"))
+    sf::Font fancyFont;
+    if (!fancyFont.openFromFile("Fonts/OldLondon.ttf"))
     {
         std::cout << "Error" << std::endl;
         return 0;
@@ -239,7 +232,6 @@ int main(int argc, char** argv)
 
     Text Leave(fancyFontText, "Leave", 50.f, 900.f, sf::Color::White, 100);
     Text characterSelectLobby(fancyFontText, "Character Select", 275.f, 390.f, sf::Color::White, 80);
-    //Text DeleteServer(fancyFontText, "Delete Server", 305.f, 440.f, sf::Color::White, 80);
     Text StartGame(fancyFontText, "Start Game", 325.f, 575.f, sf::Color::White, 80);   
     Text Arena(fancyFontText, "Arena", 1300.f, 575.f, sf::Color::White, 80);
    
@@ -268,9 +260,14 @@ int main(int argc, char** argv)
 
     Text serverLoading(fancyFontText, "Creating Server...", 350.f, 400.f, sf::Color::White, 200);
 
-    DebugOverlay debug(font);
+    sf::Text singlePlayerHealthText(fancyFont);
+    singlePlayerHealthText.setOutlineColor(sf::Color::Black);
+    singlePlayerHealthText.setOutlineThickness(3);
+    singlePlayerHealthText.setCharacterSize(30);
 
-    sf::Text names(font);
+    DebugOverlay debug(fancyFont);
+
+    sf::Text names(fancyFont);
     names.setOutlineColor(sf::Color::Black);
     names.setOutlineThickness(3);
 
@@ -348,7 +345,7 @@ int main(int argc, char** argv)
     maxPlayersBox.setOutlineColor(sf::Color::Black);
     maxPlayersBox.setOutlineThickness(2);
 
-    sf::Text maxPlayersText(font);
+    sf::Text maxPlayersText(fancyFont);
     maxPlayersText.setCharacterSize(50);
     maxPlayersText.setOutlineThickness(5);
     maxPlayersText.setFillColor(sf::Color::White);
@@ -1807,8 +1804,9 @@ int main(int argc, char** argv)
                     window.setMouseCursorVisible(false);
 
                 }
-                          
+                                       
                 singlePlayerKnight->updateSinglePlayer(deltaTime, tiles, enemies, arrows, standardFont);
+                singlePlayerHealthText.setString("(" + to_string(singlePlayerKnight->getHealth()) + "/" + to_string(singlePlayerKnight->getMaxHealth()) + ")");
            
 
                 if (singlePlayerKnight->isDeadBool())
@@ -1940,6 +1938,7 @@ int main(int argc, char** argv)
                 heartSprite.setPosition({ backgroundShape.getPosition().x + 15, backgroundShape.getPosition().y + 8 });
                 singlePlayerPotionSprite.setPosition({backgroundShape.getPosition().x + 15, backgroundShape.getPosition().y + 900});
                 singlePlayerKnight->potionNumText.setPosition( backgroundShape.getPosition().x + 100, backgroundShape.getPosition().y + 975 );
+                singlePlayerHealthText.setPosition({ backgroundShape.getPosition().x + 80, backgroundShape.getPosition().y + 65 });
 
                 inventory.setPosition({ backgroundShape.getPosition().x + 20, backgroundShape.getPosition().y + 850 });
 
@@ -1962,8 +1961,8 @@ int main(int argc, char** argv)
                 window.draw(inventory);
                 window.draw(singlePlayerPotionSprite);
                 singlePlayerKnight->potionNumText.draw(window);
-
-                singlePlayerKnight->getHealthBar().draw(window);
+                singlePlayerKnight->getHealthBar().draw(window);          
+                window.draw(singlePlayerHealthText);
                 window.draw(heartSprite);
            
                 break;
@@ -2564,7 +2563,7 @@ int main(int argc, char** argv)
                     window,
                     players,
                     client,
-                    font,
+                    fancyFont,
                     HUDlayout,
                     potionSprite,
                     multiplayerInventory,
@@ -2918,11 +2917,11 @@ int main(int argc, char** argv)
                         float x = 1300;
                         float y = 300.f + i * 100;
 
-                        ServerEntryUI entry(font);
+                        ServerEntryUI entry(fancyFont);
 
                         entry.serverIndex = i;
 
-                        entry.text.setFont(font);
+                        entry.text.setFont(fancyFont);
                         entry.text.setCharacterSize(40);
                         entry.text.setFillColor(sf::Color::White);
                         entry.text.setPosition({ x, y });
@@ -3135,8 +3134,7 @@ int main(int argc, char** argv)
                 break;
             }
             case GameState::preGameLobby:
-            {               
-                
+            {                         
                 if (client.loadingStarted())
                 {
                     menuMusic.stop();
@@ -3192,7 +3190,7 @@ int main(int argc, char** argv)
 
                 if (client.isHost())
                 {
-                    for (auto& server : client.getServerList())
+                    for (const auto& server : client.getServerList())
                     {
                         if (server.id == client.getServerID() && server.passwordProtected)
                         {
@@ -3396,7 +3394,7 @@ int main(int argc, char** argv)
                     window,
                     players,
                     client,
-                    font,
+                    fancyFont,
                     HUDlayout,
                     potionSprite,
                     multiplayerInventory,
