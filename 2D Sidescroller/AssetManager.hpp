@@ -9,9 +9,9 @@ public:
 
     bool load();
 
-    knightTextures getKnightTextures();
-    samuraiTextures getSamuraiTextures();
-    backgroundTextures getBackgroundTextures();
+    KnightTextures getKnightTextures();
+    SamuraiTextures getSamuraiTextures();
+    BackgroundTextures getBackgroundTextures();
     GUITextures getGUITextures();
     WolfTextures getWolfTextures();
 
@@ -37,8 +37,7 @@ private:
     sf::Texture knightElixirTex;  
     sf::Texture knightJumpAttackTex;
     sf::Texture potionTexture;
-   
-  
+ 
     // Samurai Textures
     sf::Texture samuraiIdleTex;
     sf::Texture samuraiWalkTex;
@@ -66,6 +65,8 @@ private:
 
     // GUI Elements
     sf::Texture crownSpriteTex;
+    sf::Texture inventoryTex;
+    sf::Texture bannerTex;
 
     // Wolf Textures
     sf::Texture wolfIdleTex;

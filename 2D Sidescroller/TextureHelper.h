@@ -1,7 +1,7 @@
 #pragma once
 #include "Animation.hpp"
 
-struct knightTextures {
+struct KnightTextures {
     sf::Texture& idleTex;
     sf::Texture& walkTex;
     sf::Texture& jumpTex;
@@ -21,7 +21,7 @@ struct knightTextures {
     sf::Texture& jumpAttackTex;
 };
 
-struct samuraiTextures {
+struct SamuraiTextures {
     sf::Texture& idleTex;
     sf::Texture& walkTex;
     sf::Texture& runTex;
@@ -38,7 +38,7 @@ struct samuraiTextures {
     sf::Texture& elixirTex;
 };
 
-struct backgroundTextures {
+struct BackgroundTextures {
     sf::Texture& loadingBackgroundTex;
     sf::Texture& createServerBackgroundTex;
     sf::Texture& singlePlayerBackgroundTex;
@@ -50,6 +50,8 @@ struct backgroundTextures {
 
 struct GUITextures {
     sf::Texture& crownSpriteTex;
+    sf::Texture& inventoryTex;
+    sf::Texture& bannerTex;
 };
 
 struct WolfTextures {

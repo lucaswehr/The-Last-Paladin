@@ -39,3 +39,25 @@ void Text::setPosition(float x, float y)
 void Text::setString(const std::string& str) {
 	text.setString(str);  // forward to sf::Text
 }
+
+void Text::update(const sf::Vector2f& mousePos, MenuHelper& helper)
+{
+	if (text.getGlobalBounds().contains(mousePos))
+	{
+		if (helper.cursorHand)
+			helper.window.setMouseCursor(*helper.cursorHand);
+
+		text.setFillColor(sf::Color::Yellow); // Highlight
+
+		if (!isHovered)
+		{
+			helper.sound.play();
+			isHovered = true;
+		}
+	}
+	else
+	{
+		text.setFillColor(sf::Color::White); // Normal
+		isHovered = false;
+	}
+}

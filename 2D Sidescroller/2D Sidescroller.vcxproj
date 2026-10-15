@@ -174,6 +174,7 @@
     <ClInclude Include="HelperMain.hpp" />
     <ClInclude Include="InputState.hpp" />
     <ClInclude Include="Knight.hpp" />
+    <ClInclude Include="MenuHelper.hpp" />
     <ClInclude Include="ParryDemo.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="PlayerFactory.hpp" />

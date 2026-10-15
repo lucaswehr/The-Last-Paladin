@@ -659,7 +659,6 @@ void Knight::updateSprintAttackCooldown(float dt)
 	if (postSprintAttackTimer <= 0.f)
 	{
 		sprintAttackCooldown = false;
-		currentAnimation->reset();
 	}
 
 }
@@ -682,7 +681,7 @@ bool Knight::tryStartRoll(InputState& input)
 	float timeSinceLastRoll = rollDelayClock.getElapsedTime().asSeconds();
 
 	if (!input.rollPressed) return false;
-	if (isRolling || isJumping || isSprinting || isSpecialAttack || isSprintAttacking || isJumpAttacking) return false;
+	if (isRolling || isJumping || isSpecialAttack || isSprintAttacking || isJumpAttacking) return false;
 	if (timeSinceLastRoll < minRollDelay) return false;
 
 	rollLogic();
@@ -707,6 +706,7 @@ void Knight::rollLogic()
 	state = PlayerState::Roll;
 	isNormalAttacking = false;
 	isJumpAttacking = false;
+	isSprintAttacking = false;
 	currentAnimation->reset();
 
 	rollDelayClock.reset();	
@@ -715,12 +715,13 @@ void Knight::rollLogic()
 void Knight::updateRollLogic()
 {
 	if (isRolling)
-	{
+	{	
 		if (lastDir == Direction::Left) velocity.x = -9.f;
 		else if (lastDir == Direction::Right) velocity.x = 9.f;
 
 		if (currentAnimation->isFinished())
 		{
+			cout << "ROLL DONE" << endl;
 			velocity.x = 0.f;
 			isRolling = false;
 			state = PlayerState::Idle;
@@ -1190,9 +1191,8 @@ void Knight::enemyKnightCollision(std::vector<std::unique_ptr<Enemy>>& enemies, 
 				isSpecialAttack = false;
 				guardTimer = 0.f;
 				knockbackTimer = 0.8f;
-
-				
-					health -= 40;
+			
+					health -= 30;
 					playOnce3 = false;
 				
 

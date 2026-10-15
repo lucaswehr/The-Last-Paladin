@@ -1,5 +1,6 @@
 #pragma once
 #include "Animation.hpp"
+#include "MenuHelper.hpp"
 
 class Text 
 {
@@ -17,10 +18,12 @@ public:
 
 	void setString(const std::string& str);
 
+	void update(const sf::Vector2f& mousePos, MenuHelper& helper);
+
 private:
 
 	sf::Font font;
 	sf::Text text;
 
-
+	bool isHovered = false;
 };

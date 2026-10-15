@@ -170,5 +170,8 @@
     <ClInclude Include="DamageNumber.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MenuHelper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

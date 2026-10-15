@@ -11,7 +11,7 @@ class Samurai : public Player
 {
 
 public:
-	Samurai(float xPos, float yPos, const samuraiTextures& textures, sf::Color& color, sf::Font& standardFont) :
+	Samurai(float xPos, float yPos, const SamuraiTextures& textures, sf::Color& color, sf::Font& standardFont) :
 		Player(80,20, 7.f, 10.f, -700.f, 1500.f, 8.f, color, standardFont),
 		Idle(textures.idleTex, 9, 1, 0.2f, 0, true, true),
 		Walk(textures.walkTex, 8, 1, 0.1f, 0, true, true),

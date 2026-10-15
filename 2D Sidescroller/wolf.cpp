@@ -114,9 +114,6 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 		break;
 
 	case State::Attack:
-		if (wolfHitsShield)
-			pendingShieldKnockback = true;
-
 		lungeSpeed = std::max(0.f, lungeSpeed - kLungeDecay * dt);
 		velocity.x = dirSign() * lungeSpeed;
 
@@ -218,7 +215,6 @@ void wolf::startAttack(bool sprinting)
 	lungeSpeed = sprinting ? kSprintSpeed : 0.f;
 	velocity.x = dirSign() * lungeSpeed;
 	attackCooldown = attackDelay;
-	pendingShieldKnockback = wolfHitsShield;
 }
 
 void wolf::finishAttack()
@@ -229,13 +225,7 @@ void wolf::finishAttack()
 	lungeSpeed = 0.f;
 	velocity.x = 0.f;
 
-	if (pendingShieldKnockback)
-	{
-		pendingShieldKnockback = false;
-		wolfHitsShield = true;
-		startKnockback(kShieldKnockback);
-	}
-	else if (wasSprint)
+	if (wasSprint)
 	{
 		startRecover(kRecoverTime);
 	}

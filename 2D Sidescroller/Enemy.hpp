@@ -44,6 +44,8 @@ public:
 	virtual sf::FloatRect getEnemyLeftLure() = 0;
 	virtual bool setInitializerBox(bool value) = 0;
 	virtual sf::FloatRect getIninitializerBox() = 0;
+	virtual bool tryHitKnight() { return true; };   // "may I damage the knight right now?"
+	virtual bool consumeDeflect() { return false; }; // "was I just deflected?" (one-shot)
 
 	void getKnightDamage(int damage) { knightDamage = damage; };
 	DamageNumber createDamageNumberText(sf::Font& standardFont, std::string message, int scaleX, int scaleY, sf::Color color, sf::Vector2f position);

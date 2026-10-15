@@ -24,6 +24,7 @@
 #include "PlayerFactory.hpp"
 #include "DeflectionDemo.hpp"
 #include "ParryDemo.hpp"
+#include "MenuHelper.hpp"
 #include <thread>
 #include <ctime>
 #include <atomic>
@@ -280,18 +281,9 @@ int main(int argc, char** argv)
     bool playSong2 = true;
     bool playSong3 = true;
     bool playSong4 = true;
-    bool playMenuSound = false;
+ 
+    bool playMenuSound1 = false;
     bool playMenuSound2 = false;
-    bool playMenuSound3 = false;
-    bool playMenuSound4 = false;
-    bool playMenuSound5 = false;
-    bool playMenuSound6 = false;
-    bool playMenuSound7 = false;
-    bool playMenuSound8 = false;
-    bool playMenuSound9 = false;
-    bool playMenuSound10 = false;
-    bool playMenuSound11 = false;
-    bool playMenuSound12 = false;
     
     bool wasAttackingLastFrame = false;
     int attackID = 0;
@@ -304,7 +296,6 @@ int main(int argc, char** argv)
     bool rebuildServerUI = false;
     int lastServerCount = 0;
     int maxPlayers = 2;
-    std::atomic<bool> serverReady = false;
     bool serverLaunched = false;
     sf::Clock loadingClock;
     bool characterSelected = false;
@@ -332,7 +323,6 @@ int main(int argc, char** argv)
     attackType attackTypes = attackType::none;
 
     bool playWinnerSound = false;
-
     bool pressedLobbyCharacterSelectButton = false;
 
     const auto CursorHand = sf::Cursor::createFromSystem(sf::Cursor::Type::Hand).value();
@@ -351,28 +341,16 @@ int main(int argc, char** argv)
     maxPlayersText.setFillColor(sf::Color::White);
     maxPlayersText.setPosition({ 650, 700 });
 
-    sf::Texture inventoryText;
-    if (!inventoryText.loadFromFile("GUI/Inventory.png"))
+    AssetManager assets;
+    sf::Music battleMusic;
+
+    if (!assets.load())
     {
-        std::cout << "error loading the knight inventory sprite" << std::endl;
+        cout << "TEXTURE(S) NOT LOADED" << endl;
+        return -1;
     }
 
-    sf::Sprite inventory(inventoryText);
-
-    inventory.setTextureRect(sf::IntRect({ 3 * 28, 5 * 32 }, { 32, 32 }));
-    inventory.setScale({ 5, 7 });
-
-
-    sf::Sprite multiplayerInventory(inventoryText);
-
-    multiplayerInventory.setTextureRect(sf::IntRect({ 3 * 28, 5 * 32 }, { 32, 32 }));
-    multiplayerInventory.setScale({ 3, 5 });
-
-    sf::Texture bannerText;
-    if (!bannerText.loadFromFile("GUI/Banners.png"))
-    {
-        std::cout << "error loading the knight banner sprite" << std::endl;
-    }
+    sf::Texture& bannerText = assets.getGUITextures().bannerTex;
 
     sf::Sprite banner(bannerText);
     sf::Sprite banner2(bannerText);
@@ -610,14 +588,14 @@ int main(int argc, char** argv)
         std::cout << "error loading the knight potion sprite" << std::endl;
     }
 
-    AssetManager assets;
-    sf::Music battleMusic;
+    sf::Sprite multiplayerInventory(assets.getGUITextures().inventoryTex);
+    sf::Sprite inventory(assets.getGUITextures().inventoryTex);
 
-    if (!assets.load())
-    {
-        cout << "TEXTURE(S) NOT LOADED" << endl;
-        return -1;
-    }
+    inventory.setTextureRect(sf::IntRect({ 3 * 28, 5 * 32 }, { 32, 32 }));
+    inventory.setScale({ 5, 7 });
+
+    multiplayerInventory.setTextureRect(sf::IntRect({ 3 * 28, 5 * 32 }, { 32, 32 }));
+    multiplayerInventory.setScale({ 3, 5 });
 
     sf::Sprite potionSprite(assets.getKnightTextures().potionTex);
     potionSprite.setScale({ 3,3 });
@@ -644,6 +622,8 @@ int main(int argc, char** argv)
 
     sf::SoundBuffer countdownBuffer;
     sf::Sound countdownSound(countdownBuffer);
+
+    MenuHelper menuHelper(window, menuSoundBuffer);
 
     menuClickBuffer.loadFromFile("Sounds/menuClickSound.mp3");
     menuSoundBuffer.loadFromFile("Sounds/menuSelectSound.mp3");
@@ -1522,12 +1502,8 @@ int main(int argc, char** argv)
                                 << info.maxPlayers
                                 << std::endl;
 
-
                             client.createServer(info);
-
-                            gameState = GameState::creatingServerLoadingScreen;
-
-                            
+                            gameState = GameState::creatingServerLoadingScreen;                    
                         }
 
                         break;
@@ -1695,8 +1671,8 @@ int main(int argc, char** argv)
                     playSong4 = true;
                     window.setMouseCursorVisible(true);
                 }
-                  //MOVING BACKGROUND
-                  ///////////////////////////////////////////////////////////////////////////////////
+                 
+                // Moving Background
                 img1.move({ -bgSpeed * deltaTime, 0.f });
                 img2.move({ -bgSpeed * deltaTime, 0.f });
 
@@ -1705,8 +1681,7 @@ int main(int argc, char** argv)
                     img1.setPosition({ img2.getPosition().x + assets.getBackgroundTextures().titleBackgroundTex.getSize().x, 0.f });
 
                 if (img2.getPosition().x + assets.getBackgroundTextures().titleBackgroundTex.getSize().x < 0)
-                    img2.setPosition({ img1.getPosition().x + assets.getBackgroundTextures().titleBackgroundTex.getSize().x, 0.f });
-                /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    img2.setPosition({ img1.getPosition().x + assets.getBackgroundTextures().titleBackgroundTex.getSize().x, 0.f });             
 
                 window.draw(img1);
                 window.draw(img2);
@@ -1723,73 +1698,12 @@ int main(int argc, char** argv)
                 title.draw(window);
                 howToPlay.draw(window);
                 BattleMode.draw(window);
-
-                if (play.getBounds().contains(mousePos))
-                {
-                    play.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound = true;
-                    }
-                }
-                else
-                {
-                    play.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound = false;
-                }
-
-                if (exit.getBounds().contains(mousePos))
-                {
-                    exit.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound2)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound2 = true;
-                    }
-                }
-                else
-                {
-                    exit.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound2 = false;
-                }
-
-                if (howToPlay.getBounds().contains(mousePos))
-                {
-                    howToPlay.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound3)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound3 = true;
-                    }
-                }
-                else
-                {
-                    howToPlay.getText().setFillColor(sf::Color::White); // Normal
-
-                    playMenuSound3 = false;
-                }
-
-                if (BattleMode.getBounds().contains(mousePos))
-                {
-                    BattleMode.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound5)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound5 = true;
-                    }
-                }
-                else
-                {
-                    BattleMode.getText().setFillColor(sf::Color::White); // Normal
-
-                    playMenuSound5 = false;
-                }     
-            
+          
+                play.update(mousePos, menuHelper);
+                exit.update(mousePos, menuHelper);
+                howToPlay.update(mousePos, menuHelper);
+                BattleMode.update(mousePos, menuHelper);
+               
                 break;
             }
             case GameState::playing:
@@ -2083,38 +1997,8 @@ int main(int argc, char** argv)
             }
             case GameState::howtoPlay:
             {            
-                if (Menu.getBounds().contains(mousePos))
-                {
-                    Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound4)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound4 = true;
-                    }
-                }
-                else
-                {
-                    Menu.getText().setFillColor(sf::Color::White); // Normal
-
-                    playMenuSound4 = false;
-                }
-
-                if (Next.getBounds().contains(mousePos))
-                {
-                    Next.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound5)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound5 = true;
-                    }
-                }
-                else
-                {
-                    Next.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound5 = false;
-                }
+                Menu.update(mousePos, menuHelper);
+                Next.update(mousePos, menuHelper);
 
                 window.draw(forestBackgroundShape);
                 rules.draw(window);
@@ -2149,57 +2033,10 @@ int main(int argc, char** argv)
             }
             case GameState::howToPlay2:
             {              
-                if (Menu.getBounds().contains(mousePos))
-                {
-                    Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound4)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound4 = true;
-                    }
-                }
-                else
-                {
-                    Menu.getText().setFillColor(sf::Color::White); // Normal
-
-                    playMenuSound4 = false;
-                }
-
-                if (previousHowToPlayPage.getBounds().contains(mousePos))
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound5)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound5 = true;
-                    }
-                }
-                else
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::White); // Normal
-
-                    playMenuSound5 = false;
-                }
-
-                if (Next.getBounds().contains(mousePos))
-                {
-                    Next.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound6)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound6 = true;
-                    }
-                }
-                else
-                {
-                    Next.getText().setFillColor(sf::Color::White); // Normal
-
-                    playMenuSound6 = false;
-                }
-
+                Menu.update(mousePos, menuHelper);
+                previousHowToPlayPage.update(mousePos, menuHelper);               
+                Next.update(mousePos, menuHelper);
+           
                 window.draw(forestBackgroundShape);
                 howToPlay2.draw(window);
                 Menu.draw(window);
@@ -2214,58 +2051,13 @@ int main(int argc, char** argv)
                 window.draw(knightJumpAttackDemo.getSprite());
                 window.draw(knightSprintAttackDemo.getSprite());
 
-
                 break;
             }
             case GameState::howToPlay3:
-            {              
-                if (Menu.getBounds().contains(mousePos))
-                {
-                    Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound4)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound4 = true;
-                    }
-                }
-                else
-                {
-                    Menu.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound4 = false;
-                }
-
-                if (previousHowToPlayPage.getBounds().contains(mousePos))
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound5)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound5 = true;
-                    }
-                }
-                else
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound5 = false;
-                }           
-
-                if (Next.getBounds().contains(mousePos))
-                {
-                    Next.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound6)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound6 = true;
-                    }
-                }
-                else
-                {
-                    Next.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound6 = false;
-                }
+            {
+                Menu.update(mousePos, menuHelper);
+                previousHowToPlayPage.update(mousePos, menuHelper);
+                Next.update(mousePos, menuHelper);
 
                 window.draw(forestBackgroundShape);
                 Menu.draw(window);               
@@ -2296,53 +2088,9 @@ int main(int argc, char** argv)
             }
             case GameState::specialInteractions:
             {              
-                if (Menu.getBounds().contains(mousePos))
-                {
-                    Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound4)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound4 = true;
-                    }
-                }
-                else
-                {
-                    Menu.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound4 = false;
-                }
-
-                if (previousHowToPlayPage.getBounds().contains(mousePos))
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound5)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound5 = true;
-                    }
-                }
-                else
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound5 = false;
-                }
-
-                if (Next.getBounds().contains(mousePos))
-                {
-                    Next.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound6)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound6 = true;
-                    }
-                }
-                else
-                {
-                    Next.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound6 = false;
-                }
+                Menu.update(mousePos, menuHelper);
+                previousHowToPlayPage.update(mousePos, menuHelper);
+                Next.update(mousePos, menuHelper);
 
                 deflectionDemo.update(deltaTime);
           
@@ -2358,37 +2106,9 @@ int main(int argc, char** argv)
             }
             case GameState::specialInteractions2:
             {           
-                if (Menu.getBounds().contains(mousePos))
-                {
-                    Menu.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound4)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound4 = true;
-                    }
-                }
-                else
-                {
-                    Menu.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound4 = false;
-                }
-
-                if (previousHowToPlayPage.getBounds().contains(mousePos))
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound5)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound5 = true;
-                    }
-                }
-                else
-                {
-                    previousHowToPlayPage.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound5 = false;
-                }
+                Menu.update(mousePos, menuHelper);
+                previousHowToPlayPage.update(mousePos, menuHelper);
+              
                 parryDemo.update(deltaTime);
                 window.draw(forestBackgroundShape);
                 specialInteractions2.draw(window);
@@ -2401,7 +2121,6 @@ int main(int argc, char** argv)
             }
             case GameState::battleMode:
             {            
-
                 /*debug.clear();
 
                 debug.addLine("State: ", players.at(myID)->stateToString(players.at(myID)->getState()));
@@ -2661,23 +2380,8 @@ int main(int argc, char** argv)
             case GameState::enterUsername:
             {           
                 nametag.update();
-
-                if (Continue.getBounds().contains(mousePos))
-                {
-                    Continue.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound6)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound6 = true;
-                    }
-                }
-                else
-                {
-                    Continue.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound6 = false;
-                }
-
+                Continue.update(mousePos, menuHelper);
+             
                 window.draw(loadingBackgroundShape);              
                 Username.draw(window);
                 nametag.draw(window);
@@ -2698,19 +2402,17 @@ int main(int argc, char** argv)
                  
                     characterSelectKnightIdleDemo.getSprite().setPosition({ 500.f, 90.f - 10.f});
 
-                    if (!playMenuSound11)
+                    if (!playMenuSound1)
                     {
                         menuSelectSound.play();
-                        playMenuSound11 = true;
+                        playMenuSound1 = true;
                     }
                 }
                 else
                 {
                     knightText.getText().setFillColor(sf::Color::White); // Normal
-
                     characterSelectKnightIdleDemo.getSprite().setPosition({ 500.f, 90.f});
-
-                    playMenuSound11 = false;
+                    playMenuSound1 = false;
                 }
 
                 if (samuraiButton.getGlobalBounds().contains(mousePos))
@@ -2718,42 +2420,6 @@ int main(int argc, char** argv)
                     samuraiText.getText().setFillColor(sf::Color::Yellow); // Highlight                   
 
                     characterSelectSamuraiIdleDemo.getSprite().setPosition({ 900.f, 95.f - 10.f });
-
-                    if (!playMenuSound12)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound12 = true;
-                    }
-                }
-                else
-                {
-                    samuraiText.getText().setFillColor(sf::Color::White); // Normal
-
-                    characterSelectSamuraiIdleDemo.getSprite().setPosition({ 900.f, 95.f });
-
-                    playMenuSound12 = false;
-                }
-
-                if (Back.getBounds().contains(mousePos))
-                {
-                    Back.getText().setFillColor(sf::Color::Yellow); // Highlight                   
-               
-                    if (!playMenuSound)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound = true;
-                    }
-                }
-                else
-                {
-                    Back.getText().setFillColor(sf::Color::White); // Normal                 
-
-                    playMenuSound = false;
-                }
-             
-                if (howToPlayCharacterSelect.getBounds().contains(mousePos))
-                {
-                    howToPlayCharacterSelect.getText().setFillColor(sf::Color::Yellow); // Highlight                   
 
                     if (!playMenuSound2)
                     {
@@ -2763,11 +2429,13 @@ int main(int argc, char** argv)
                 }
                 else
                 {
-                    howToPlayCharacterSelect.getText().setFillColor(sf::Color::White); // Normal                 
-
+                    samuraiText.getText().setFillColor(sf::Color::White); // Normal
+                    characterSelectSamuraiIdleDemo.getSprite().setPosition({ 900.f, 95.f });
                     playMenuSound2 = false;
                 }
 
+                Back.update(mousePos, menuHelper);          
+                howToPlayCharacterSelect.update(mousePos, menuHelper);
 
                 characterSelectKnightIdleDemo.update(deltaTime);    
                 characterSelectSamuraiIdleDemo.update(deltaTime);
@@ -2795,56 +2463,9 @@ int main(int argc, char** argv)
             }       
             case GameState::serverPage:
             {
-
-                if (Back.getBounds().contains(mousePos))
-                {
-                    Back.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound8)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound8 = true;
-                    }
-                }
-                else
-                {
-                    Back.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound8 = false;
-                }
-
-                if (JoinServer.getBounds().contains(mousePos))
-                {
-                    JoinServer.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound6)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound6 = true;
-                    }
-                }
-                else
-                {
-                    JoinServer.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound6 = false;
-                }
-
-                if (CreateServer.getBounds().contains(mousePos))
-                {
-                    CreateServer.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound7)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound7 = true;
-                    }
-                }
-                else
-                {
-                    CreateServer.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound7 = false;
-                }
-
-
+                Back.update(mousePos, menuHelper);
+                JoinServer.update(mousePos, menuHelper);
+                CreateServer.update(mousePos, menuHelper);
 
                 window.draw(multiplayerBackgroundShape);
                 window.draw(serverBanner1);
@@ -2863,40 +2484,9 @@ int main(int argc, char** argv)
             }
             case GameState::joinServer:
             {
-                if (Back.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    Back.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound8)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound8 = true;
-                    }
-                }
-                else
-                {
-                    Back.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound8 = false;
-                }
-
-                if (Refresh.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    Refresh.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound10)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound10 = true;
-                    }
-                }
-                else
-                {
-                    Refresh.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound10 = false;
-                }
-
+                Back.update(mousePos, menuHelper);
+                Refresh.update(mousePos, menuHelper);
+               
                 client.updateLobby();
 
                 window.draw(serverListBackgroundShape);
@@ -2935,8 +2525,6 @@ int main(int argc, char** argv)
                         );
 
                         serverEntries.emplace_back(entry);
-
-
                     }
 
                     rebuildServerUI = false;
@@ -2962,12 +2550,10 @@ int main(int argc, char** argv)
                     }
                 }
 
-
                 for (auto& entry : serverEntries)
                 {
                     window.draw(entry.text);
                 }
-
 
                 Back.draw(window);
                 Refresh.draw(window);
@@ -2977,93 +2563,30 @@ int main(int argc, char** argv)
             case GameState::enterPassword:
             {
                 passwordAttemptBox.update();
-
-                if (Continue.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    Continue.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound10)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound10 = true;
-                    }
-                }
-                else
-                {
-                    Continue.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound10 = false;
-                }
-
-                if (Back.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    Back.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound9)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound9 = true;
-                    }
-                }
-                else
-                {
-                    Back.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound9 = false;
-                }
-
-
+                Back.update(mousePos, menuHelper);
+                Continue.update(mousePos, menuHelper);
+                
                 window.draw(multiplayerBackgroundShape);
                 passwordAttemptBox.draw(window);
                 EnterPassword.draw(window);
                 Back.draw(window);
 
-                if (passwordAttemptBox.letterCount > 0) Continue.draw(window);
+                if (passwordAttemptBox.letterCount > 0)
+                    Continue.draw(window);
+
                 if (showErrorMessage)
                 {
                     errorMessage.setString("Incorrect Password (" + std::to_string(errorMessageCount) + ")");
                     errorMessage.draw(window);
-                }
-                   
+                }        
 
                 break;
             }
             case GameState::createServer:
             {
-                if (Create.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    Create.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound7)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound7 = true;
-                    }
-                }
-                else
-                {
-                    Create.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound7 = false;
-                }
-
-                if (Back.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    Back.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound8)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound8 = true;
-                    }
-                }
-                else
-                {
-                    Back.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound8 = false;
-                }
-
+                Create.update(mousePos, menuHelper);
+                Back.update(mousePos, menuHelper);
+                
                 if (serverNameBox.box.getGlobalBounds().contains(mousePos) || passwordBox.box.getGlobalBounds().contains(mousePos) ||
                     maxPlayersBox.getGlobalBounds().contains(mousePos))
                 {
@@ -3075,7 +2598,6 @@ int main(int argc, char** argv)
                 serverNameBox.update();
                 passwordBox.update();
                 nametag.update();
-
 
                 window.draw(createServerBackgroundShape);
 
@@ -3097,15 +2619,13 @@ int main(int argc, char** argv)
                   Create.draw(window);
 
                 break;
-
             }
             case GameState::loading:
             {              
                 menuMusic.stop();
 
                 if (loadingClock.getElapsedTime().asSeconds() >= 2.f)
-                {         
-                   
+                {                          
                    HUDlayout = calculateHealthbarPositioning(client.getLobbyPlayers().size());
                    gameState = GameState::countdown;                    
                 }
@@ -3214,8 +2734,6 @@ int main(int argc, char** argv)
                 {   
                     sf::Color myColor = playerColors[id % playerColors.size()];
 
-                   // cout << "LOBBY SIZE: " << client.getLobbyPlayers().size() << endl;
-
                     sf::Text text(standardFont);
                     text.setString(player.name);
                     text.setPosition({ x, 950.f });
@@ -3276,66 +2794,15 @@ int main(int argc, char** argv)
                 {
                     if (client.getLobbyPlayers().size() == client.maxLobbySize)
                     {
-                        if (StartGame.getBounds().contains(mousePos))
-                        {
-                            window.setMouseCursor(CursorHand);
-                            StartGame.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                            if (!playMenuSound8)
-                            {
-                                menuSelectSound.play();
-                                playMenuSound8 = true;
-                            }
-                        }
-                        else
-                        {
-                            StartGame.getText().setFillColor(sf::Color::White); // Normal
-                            playMenuSound8 = false;
-                        }
-                        
+                        StartGame.update(mousePos, menuHelper);        
                         window.draw(startGameBackground);
                         StartGame.draw(window);                     
                     }             
-                }
-               
+                }             
 
-                    if (Leave.getBounds().contains(mousePos))
-                    {
-                        window.setMouseCursor(CursorHand);
-                        Leave.getText().setFillColor(sf::Color::Red); // Highlight
-
-                        if (!playMenuSound8)
-                        {
-                            menuSelectSound.play();
-                            playMenuSound8 = true;
-                        }
-                    }
-                    else
-                    {
-                        Leave.getText().setFillColor(sf::Color::White); // Normal
-                        playMenuSound8 = false;
-                    }
-
-                    Leave.draw(window);
-                
-
-                if (characterSelectLobby.getBounds().contains(mousePos))
-                {
-                    window.setMouseCursor(CursorHand);
-                    characterSelectLobby.getText().setFillColor(sf::Color::Yellow); // Highlight
-
-                    if (!playMenuSound)
-                    {
-                        menuSelectSound.play();
-                        playMenuSound = true;
-                    }
-                }
-                else
-                {
-                    characterSelectLobby.getText().setFillColor(sf::Color::White); // Normal
-                    playMenuSound = false;
-                }
-                                                   
+                Leave.update(mousePos, menuHelper);
+                characterSelectLobby.update(mousePos, menuHelper);
+                                                              
                 break;
             }
             case GameState::countdown:
@@ -3377,10 +2844,7 @@ int main(int argc, char** argv)
                     client.sendPlayerState(myID, myKnight->getPlayerBox().getPosition().x, myKnight->getPlayerBox().getPosition().y,
                         myKnight->getState(), myKnight->getDirection());
 
-                }
-                    
-
-                //cout << localKnight.stateToString(localKnight.getState()) << endl;
+                }                                  
 
                 window.draw(multiplayerBackgroundShape);
 
@@ -3428,9 +2892,7 @@ int main(int argc, char** argv)
                     countdownText.setString("FIGHT");
                     countdownText.draw(window);
                 }
-
-                
-
+               
                 if (client.gameStarted && client.goTimer == 0) 
                 {   
                     battleSongLogic(battleMusic);
@@ -3438,15 +2900,11 @@ int main(int argc, char** argv)
                     countdownStarted = false;
                 }
     
-                break;
-            
-
+                break;           
             }
             case GameState::testingGrounds:
             {
-
                 testSamurai->updateMultiplayer(deltaTime, multiplayerTiles, standardFont);
-             
                 testSamurai->determineCharacterHitbox();
 
                 window.draw(backgroundShape);
@@ -3454,13 +2912,8 @@ int main(int argc, char** argv)
                // testSamurai->draw(window);
                 break;
             }
+        }    
 
-        }
-               
-       //singlePlayerKnight.drawCollisionBox(window);
-
-        window.display();
-
-       
+        window.display();    
     }
 }

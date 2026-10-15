@@ -1,6 +1,7 @@
 #include "ServerInfo.h"
 #include "Animation.hpp"
 #include "TextBox.hpp"
+#include "text.hpp"
 
 using namespace std;
 

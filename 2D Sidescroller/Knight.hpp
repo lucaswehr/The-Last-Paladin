@@ -17,7 +17,7 @@ class Knight : public Player
 {
 public:
 
-	Knight(float xPos, float yPos, const knightTextures& textures,std::string& fontText, sf::Color& color, sf::Font& standardFont) :
+	Knight(float xPos, float yPos, const KnightTextures& textures,std::string& fontText, sf::Color& color, sf::Font& standardFont) :
 		Player(100, 50, 5.f, 8.f, -500.f, 1200.f, 6.f, color, standardFont),
 		Idle(textures.idleTex, 4, 1, 0.3f, 0, true, true, true), //Texture, number of frames, rows, speed, 0 if its just one row of animatoin, if it should invert, if the animation should loop infintly, isKnight
 		walk(textures.walkTex, 8, 1, 0.1f, 0, true, true, true),
@@ -129,21 +129,17 @@ public:
 	void updateSinglePlayer(float dt, std::vector<Tile>& tiles, std::vector<std::unique_ptr<Enemy>>& enemies, std::vector<Arrow>& arrows, sf::Font& standardFont) override
 	{
 		potionNumText.setString(std::to_string(potionNumber));
-
 		rightLureBox.setPosition({ currentAnimation->getSprite().getPosition() });
-
 		leftLureBox.setPosition({ currentAnimation->getSprite().getPosition() });
-
 		climbingBox.setPosition({ currentAnimation->getSprite().getPosition() });
 
 		currentAnimation->setDirection(lastDir);
 
 		updateDamageText(dt);
-
-		if (handleDeathLogic(dt, tiles)) return;
-
 		updatePotionLogic(standardFont);
 		updateBoundryBoxes();
+
+		if (handleDeathLogic(dt, tiles)) return;
 
 		currentAnimation->setDirection(lastDir);
 
@@ -189,9 +185,7 @@ public:
 			isJumpAttacking = false;
 		}
 
-
 		enemyKnightCollision(enemies, arrows, dt);
-		
 		updateHitBoxWindow(dt);
 		climbingLogic(tiles);
 		updateGravity(dt, tiles);
@@ -200,11 +194,9 @@ public:
 		musicLogic();
 
 		switchAnimationByState(state);
-
 		lastInput = input;
 
 		currentAnimation->getSprite().setPosition(playerBox.getPosition() + animationOffset());
-
 		currentAnimation->update(dt);
 	}
 

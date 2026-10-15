@@ -586,7 +586,7 @@ void Dragon::airAttackLogic(std::vector<Tile>& tiles, float dt)
 		break;
 
 	case AirState::Special:
-		velocity = { dir * 10.f, 0.f };
+		velocity = { dir * 13.f, 0.f };
 
 		// Fly until the platform ends (probe below the dragon loses the ground)
 		if ((phaseTime > 0.25f && !touchesAnyTile(placeHolder.getGlobalBounds(), tiles)) || phaseTime > 12.f)

@@ -47,6 +47,8 @@ bool AssetManager::load()
     success &= loadTexture(howToPlayBackrgoundTex, "Backgrounds/forestBackground.png");
 
     success &= loadTexture(crownSpriteTex, "GUI/crownSprite.png");
+    success &= loadTexture(inventoryTex, "GUI/inventory.png");
+    success &= loadTexture(bannerTex, "GUI/Banners.png");
 
     success &= loadTexture(wolfIdleTex, "wolf/Idle.png");
     success &= loadTexture(wolfWalkTex, "wolf/Walk.png");
@@ -61,7 +63,7 @@ bool AssetManager::load()
     return success;
 }
 
-knightTextures AssetManager::getKnightTextures()
+KnightTextures AssetManager::getKnightTextures()
 {
     return { 
          knightIdleTex,
@@ -84,7 +86,7 @@ knightTextures AssetManager::getKnightTextures()
     };
 }
 
-samuraiTextures AssetManager::getSamuraiTextures()
+SamuraiTextures AssetManager::getSamuraiTextures()
 {
     return { 
         samuraiIdleTex,
@@ -104,7 +106,7 @@ samuraiTextures AssetManager::getSamuraiTextures()
     };
 }
 
-backgroundTextures AssetManager::getBackgroundTextures()
+BackgroundTextures AssetManager::getBackgroundTextures()
 {
     return {
         loadingBackgroundTex,
@@ -120,7 +122,9 @@ backgroundTextures AssetManager::getBackgroundTextures()
 GUITextures AssetManager::getGUITextures()
 {
     return {
-        crownSpriteTex
+        crownSpriteTex,
+        inventoryTex,
+        bannerTex
     };
 }
 
