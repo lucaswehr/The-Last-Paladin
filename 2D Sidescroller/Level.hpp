@@ -12,4 +12,9 @@ public:
 
     void draw(sf::RenderWindow& window, std::vector<Tile>& tiles, std::vector<Tile>& decorationTiles);
     void drawOnlyTiles(sf::RenderWindow& window, std::vector<Tile>& tiles);
+
+    std::vector<std::vector<int>> getSinglePlayerMap();
+    std::vector<std::vector<int>> getMultiplayerMap();
+    std::vector<std::vector<int>> getSinglePlayerDecoMap();
+    std::vector<std::vector<int>> getMultiplayerDecoMap();
 };
