@@ -17,4 +17,5 @@ public:
     std::vector<std::vector<int>> getMultiplayerMap();
     std::vector<std::vector<int>> getSinglePlayerDecoMap();
     std::vector<std::vector<int>> getMultiplayerDecoMap();
+    std::vector<std::vector<int>> getDemoMap();
 };
