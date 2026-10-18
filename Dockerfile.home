@@ -1,0 +1,54 @@
+# Home-server image: the lobby plus the game server binary it spawns as
+# child processes (LOBBY_BACKEND=local). One container runs everything.
+FROM ubuntu:24.04
+
+RUN apt-get update && \
+    apt-get install -y \
+    g++ \
+    git \
+    cmake \
+    libcurl4-openssl-dev \
+    libx11-dev \
+    libxrandr-dev \
+    libxcursor-dev \
+    libxi-dev \
+    libudev-dev \
+    libfreetype-dev \
+    libopenal-dev \
+    libflac-dev \
+    libvorbis-dev \
+    libogg-dev \
+    libgl1-mesa-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --branch 3.0.0 --depth 1 https://github.com/SFML/SFML.git /tmp/SFML && \
+    cmake -S /tmp/SFML -B /tmp/SFML/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=ON \
+        -DSFML_BUILD_EXAMPLES=OFF \
+        -DSFML_BUILD_TEST_SUITE=OFF && \
+    cmake --build /tmp/SFML/build -j$(nproc) && \
+    cmake --install /tmp/SFML/build && \
+    ldconfig && rm -rf /tmp/SFML
+
+WORKDIR /app
+COPY ["2D Sidescroller/", "/app/"]
+
+RUN g++ -std=c++17 \
+    Arrow.cpp AssetManager.cpp Client.cpp DeflectionDemo.cpp Dragon.cpp \
+    Enemy.cpp Knight.cpp Level.cpp LobbyClient.cpp LobbyServer.cpp main.cpp \
+    ParryDemo.cpp Player.cpp Samurai.cpp Skeleton.cpp text.cpp Tile.cpp wolf.cpp \
+    -o the_last_paladin \
+    -I/usr/local/include -L/usr/local/lib \
+    -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-network -lsfml-system -lcurl
+
+RUN g++ -std=c++17 lobby_main.cpp LobbyServer.cpp -o lobby_server \
+    -I/usr/local/include -L/usr/local/lib \
+    -lsfml-network -lsfml-system -lcurl
+
+# Game servers are untrusted-input relays: run everything unprivileged
+RUN useradd -r -u 10001 paladin
+USER paladin
+
+ENV LOBBY_BACKEND=local
+CMD ["./lobby_server"]

@@ -103,7 +103,8 @@ int main(int argc, char** argv)
         srand(static_cast<unsigned>(time(nullptr)));
 
         unsigned short gamePort = 54000; 
-        unsigned short lobbyPort = 54001;  
+        unsigned short lobbyPort = static_cast<unsigned short>(std::stoi(getEnvOrDefault("LOBBY_PORT", "54001")));
+        const std::string clientLobbyHost = getEnvOrDefault("LOBBY_HOST", "last-paladin-lobby-lucas.westus.azurecontainer.io");
 
         if (argc > 1 && std::string(argv[1]) == "server")
         {
@@ -1179,7 +1180,7 @@ int main(int argc, char** argv)
                             {
                                 menuClickSound.play();
                                 cout << "CONNECTING FROM ENTER USERNAME INSTANCE OF CONNECT TO LOBBY" << endl;
-                                client.connectToLobby("last-paladin-lobby-lucas.westus.azurecontainer.io", lobbyPort); // Connect to lobby first to be able to use lobbysocket for requestServerList and other things
+                                client.connectToLobby(clientLobbyHost, lobbyPort); // Connect to lobby first to be able to use lobbysocket for requestServerList and other things
                                 client.setPlayerName(nametag.str); // Set your player name to the one from the username textbox
                                 gameState = GameState::characterSelect;
                                 clickConsumed = true;

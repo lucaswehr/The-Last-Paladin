@@ -137,3 +137,21 @@ cmake --build build --target run    # or: cd build && ./the_last_paladin
 ```
 
 Assets are copied next to the executable at build time; the game loads them relative to the working directory, so run it from `build/`. Pass `-DBUILD_LOBBY_SERVER=ON` (needs libcurl) to also build the lobby server.
+
+Self-hosting the lobby (no Azure)
+---------------------------------
+
+The lobby can run game servers as child processes instead of Azure containers:
+
+```sh
+docker compose up -d --build     # see compose.yaml; set PUBLIC_HOST to the address clients use
+```
+
+| Variable | Where | Meaning |
+|---|---|---|
+| `LOBBY_BACKEND=local` | lobby | Spawn `./the_last_paladin server` per game instead of calling Azure |
+| `PUBLIC_HOST` | lobby | IP clients connect to (e.g. the Tailscale IP). Required in local mode |
+| `GAME_PORT_BASE` | lobby | Game server for id N listens on base+N (default 54010) |
+| `LOBBY_HOST` / `LOBBY_PORT` | client | Lobby to connect to (default: the Azure host, 54001) |
+
+Players run the client with `LOBBY_HOST=<tailscale ip> ./the_last_paladin` and must be on the same tailnet.

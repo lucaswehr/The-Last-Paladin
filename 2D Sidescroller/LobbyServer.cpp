@@ -3,6 +3,126 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#ifndef _WIN32
+#include <csignal>
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
+
+LobbyServer::LobbyServer()
+{
+    const char* backend = std::getenv("LOBBY_BACKEND");
+    localBackend = backend && std::string(backend) == "local";
+
+    if (const char* host = std::getenv("PUBLIC_HOST")) publicHost = host;
+    if (const char* base = std::getenv("GAME_PORT_BASE")) gamePortBase = std::atoi(base);
+}
+
+LobbyServer::~LobbyServer()
+{
+    stopAllLocalGameServers();
+}
+
+void LobbyServer::createLocalGameServer(int assignedID, ServerInfo server, std::shared_ptr<sf::TcpSocket> client)
+{
+#ifdef _WIN32
+    std::cout << "Local backend is not supported on Windows\n";
+    return;
+#else
+    auto resolvedIP = sf::IpAddress::resolve(publicHost);
+    if (!resolvedIP)
+    {
+        std::cout << "PUBLIC_HOST is not a valid address: '" << publicHost << "'\n";
+        return;
+    }
+
+    server.port = static_cast<unsigned short>(gamePortBase + assignedID);
+
+    std::string exe = std::getenv("GAME_SERVER_BIN") ? std::getenv("GAME_SERVER_BIN") : "./the_last_paladin";
+
+    // Everything the child needs goes in its environment, same as the Azure container
+    std::vector<std::string> env = {
+        "SERVER_ID=" + std::to_string(assignedID),
+        "SERVER_NAME=" + server.name,
+        "SERVER_PORT=" + std::to_string(server.port),
+        "SERVER_MAX_PLAYERS=" + std::to_string(server.maxPlayers),
+        std::string("SERVER_PASSWORD_PROTECTED=") + (server.passwordProtected ? "1" : "0"),
+        "SERVER_PASSWORD=" + server.password,
+        "LOBBY_HOST=127.0.0.1",
+    };
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        std::cout << "fork failed for game server " << assignedID << '\n';
+        return;
+    }
+    if (pid == 0)
+    {
+        // don't leak the lobby's listener/client sockets into the game server
+        for (int fd = 3; fd < 1024; ++fd) close(fd);
+        for (auto& e : env) putenv(const_cast<char*>(e.c_str()));
+        execl(exe.c_str(), exe.c_str(), "server", (char*)nullptr);
+        _exit(127);
+    }
+
+    server.ip = resolvedIP.value();
+    server.currentPlayers = 1;
+    server.heartBeat.restart();
+
+    {
+        std::lock_guard<std::mutex> lock(serverMutex);
+        servers.emplace(assignedID, server);
+        children[assignedID] = pid;
+    }
+
+    // Don't tell the client until the child is accepting connections
+    bool listening = false;
+    for (int i = 0; i < 50 && !listening; ++i)
+    {
+        sf::TcpSocket probe;
+        listening = probe.connect(sf::IpAddress(127, 0, 0, 1), server.port, sf::seconds(0.2f)) == sf::Socket::Status::Done;
+        if (!listening) sf::sleep(sf::milliseconds(100));
+    }
+    if (!listening)
+        std::cout << "Game server " << assignedID << " did not start listening in time\n";
+
+    sf::Packet response;
+    response << static_cast<int>(PacketType::ServerReady) << assignedID << publicHost << server.port;
+    (void)client->send(response);
+
+    std::cout << "Local server registered: " << server.name << " at "
+        << publicHost << ":" << server.port << " (pid " << pid << ")\n";
+#endif
+}
+
+void LobbyServer::stopLocalGameServer(int serverID)
+{
+#ifndef _WIN32
+    long pid = 0;
+    {
+        std::lock_guard<std::mutex> lock(serverMutex);
+        auto it = children.find(serverID);
+        if (it == children.end()) return;
+        pid = it->second;
+        children.erase(it);
+    }
+    kill(static_cast<pid_t>(pid), SIGTERM);
+    waitpid(static_cast<pid_t>(pid), nullptr, 0);
+#endif
+}
+
+void LobbyServer::stopAllLocalGameServers()
+{
+#ifndef _WIN32
+    std::vector<int> ids;
+    {
+        std::lock_guard<std::mutex> lock(serverMutex);
+        for (auto& [id, pid] : children) ids.push_back(id);
+    }
+    for (int id : ids) stopLocalGameServer(id);
+#endif
+}
 
 void LobbyServer::start(int port)
 {
@@ -161,7 +281,18 @@ void LobbyServer::update()
         }
     }
 
-    if (!serversToDelete.empty())
+    if (!serversToDelete.empty() && localBackend)
+    {
+        for (auto serverID : serversToDelete)
+        {
+            stopLocalGameServer(serverID);
+
+            std::lock_guard<std::mutex> lock(serverMutex);
+            if (servers.erase(serverID))
+                std::cout << "Removed server " << serverID << " from lobby.\n";
+        }
+    }
+    else if (!serversToDelete.empty())
     {
         std::string tokenResponse = getAzureAccessToken(); 
         std::string accessToken = extractAccessToken(tokenResponse); 
@@ -217,6 +348,12 @@ void LobbyServer::handlePacket(std::shared_ptr<sf::TcpSocket> client, sf::Packet
         {
             std::lock_guard<std::mutex> lock(serverMutex);
             assignedID = nextServerID++;
+        }
+
+        if (localBackend)
+        {
+            std::thread([this, assignedID, server, client]() { createLocalGameServer(assignedID, server, client); }).detach();
+            return;
         }
 
         const char* acrPasswordEnv = std::getenv("ACR_PASSWORD");

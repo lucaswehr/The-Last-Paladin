@@ -22,6 +22,17 @@ class LobbyServer
 
     int nextServerID = 0;
 
+    // "local" backend: game servers run as child processes of the lobby
+    // instead of Azure containers (see LOBBY_BACKEND in README).
+    bool localBackend = false;
+    std::string publicHost;
+    int gamePortBase = 54010;
+    std::unordered_map<int, long> children; // serverID -> pid (guarded by serverMutex)
+
+    void createLocalGameServer(int assignedID, ServerInfo server, std::shared_ptr<sf::TcpSocket> client);
+    void stopLocalGameServer(int serverID);
+    void stopAllLocalGameServers();
+
 
     // Sockets that have connected but not yet proven themselves with a real packet.
     // Probes live and die here without ever touching `clients`.
@@ -32,7 +43,8 @@ class LobbyServer
 
   public:
 
-    LobbyServer() = default;
+    LobbyServer();
+    ~LobbyServer();
 
     void start(int port);
     void update();
