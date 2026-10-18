@@ -182,7 +182,7 @@ void LobbyServer::start(int port)
             {
                 // Real client: log, handle its first packet, promote to clients
                 std::cout << "New client connected to lobby from "
-                    << it->sock->getRemoteAddress().value().toString()
+                    << it->sock->getRemoteAddress().value_or(sf::IpAddress::Any).toString()
                     << std::endl;
 
                 handlePacket(it->sock, packet);
@@ -228,7 +228,7 @@ void LobbyServer::start(int port)
             else if (status == sf::Socket::Status::Disconnected)
             {
                 std::cout << "LOBBY CLIENT DISCONNECTED FROM "
-                    << (*it)->getRemoteAddress().value().toString()
+                    << (*it)->getRemoteAddress().value_or(sf::IpAddress::Any).toString()
                     << std::endl;
                 it = clients.erase(it);
             }
