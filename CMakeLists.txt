@@ -62,6 +62,45 @@ add_custom_command(TARGET the_last_paladin POST_BUILD
         "${SRC_DIR}/Inventory.png" "$<TARGET_FILE_DIR:the_last_paladin>/Inventory.png"
     VERBATIM)
 
+# ---------------------------------------------------------------------------
+# Windows hand-off: make build/Release a folder that can be zipped and played
+# without installing anything but Tailscale.
+#   cmake --build build --config Release --target package_zip
+# ---------------------------------------------------------------------------
+if(WIN32)
+    set(LOBBY_HOST "100.112.152.113" CACHE STRING "Lobby address written into play.bat")
+
+    # SFML DLLs (incl. openal32.dll) from <SFML>/bin
+    get_filename_component(SFML_ROOT "${SFML_DIR}/../../.." ABSOLUTE)
+    file(GLOB SFML_DLLS "${SFML_ROOT}/bin/*.dll")
+    foreach(dll IN LISTS SFML_DLLS)
+        add_custom_command(TARGET the_last_paladin POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${dll}" "$<TARGET_FILE_DIR:the_last_paladin>"
+            VERBATIM)
+    endforeach()
+
+    # The prebuilt SFML DLLs use the dynamic MSVC runtime, so ship its DLLs
+    # next to the exe (app-local deployment) instead of requiring the redistributable.
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP OFF)
+    include(InstallRequiredSystemLibraries)
+    foreach(dll IN LISTS CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+        add_custom_command(TARGET the_last_paladin POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${dll}" "$<TARGET_FILE_DIR:the_last_paladin>"
+            VERBATIM)
+    endforeach()
+
+    file(GENERATE OUTPUT "$<TARGET_FILE_DIR:the_last_paladin>/play.bat"
+        CONTENT "@echo off\r\nset LOBBY_HOST=${LOBBY_HOST}\r\nthe_last_paladin.exe\r\n")
+
+    add_custom_target(package_zip
+        COMMAND ${CMAKE_COMMAND} -E tar cf "${CMAKE_BINARY_DIR}/TheLastPaladin.zip" --format=zip .
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:the_last_paladin>"
+        DEPENDS the_last_paladin
+        COMMENT "Creating TheLastPaladin.zip")
+endif()
+
 # `cmake --build build --target run` builds and launches from the right folder
 add_custom_target(run
     COMMAND $<TARGET_FILE:the_last_paladin>
