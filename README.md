@@ -124,3 +124,16 @@ Download Instructions
 1.) Extract zip file
 
 2.) Click on '2D Sidescroller' executable
+
+Building on Linux
+-----------------
+
+Requires a C++17 compiler, CMake 3.26+, and SFML 3 (e.g. `sudo pacman -S sfml cmake` on Arch, or build SFML 3 from source on distros that only package SFML 2).
+
+```sh
+cmake -S . -B build
+cmake --build build -j
+cmake --build build --target run    # or: cd build && ./the_last_paladin
+```
+
+Assets are copied next to the executable at build time; the game loads them relative to the working directory, so run it from `build/`. Pass `-DBUILD_LOBBY_SERVER=ON` (needs libcurl) to also build the lobby server.

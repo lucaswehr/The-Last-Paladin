@@ -53,13 +53,13 @@ RUN find /usr/local -type f \
 COPY ["2D Sidescroller/", "/app/"]
 
 # 9. Compile your server
-# 9. Compile your server
 RUN g++ -std=c++17 \
     Arrow.cpp \
     AssetManager.cpp \
     Client.cpp \
     DeflectionDemo.cpp \
     Dragon.cpp \
+    Enemy.cpp \
     Knight.cpp \
     Level.cpp \
     LobbyClient.cpp \
