@@ -1,5 +1,6 @@
 #pragma once
 #include "Animation.hpp"
+#include <algorithm>
 
 class Healthbar
 {

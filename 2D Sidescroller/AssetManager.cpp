@@ -47,11 +47,11 @@ bool AssetManager::load()
     success &= loadTexture(howToPlayBackrgoundTex, "Backgrounds/forestBackground.png");
 
     success &= loadTexture(crownSpriteTex, "GUI/crownSprite.png");
-    success &= loadTexture(inventoryTex, "GUI/inventory.png");
+    success &= loadTexture(inventoryTex, "GUI/Inventory.png");
     success &= loadTexture(bannerTex, "GUI/Banners.png");
 
     success &= loadTexture(wolfIdleTex, "wolf/Idle.png");
-    success &= loadTexture(wolfWalkTex, "wolf/Walk.png");
+    success &= loadTexture(wolfWalkTex, "wolf/walk.png");
     success &= loadTexture(wolfAttack1Tex, "wolf/Attack_1.png");
     success &= loadTexture(wolfAttack2Tex, "wolf/Attack_2.png");
     success &= loadTexture(wolfAttack3Tex, "wolf/Attack_3.png");

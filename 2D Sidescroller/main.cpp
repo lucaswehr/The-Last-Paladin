@@ -126,7 +126,7 @@ int main(int argc, char** argv)
             server.setServerID(assignedServerID);
 
             if (assignedServerID == -1)
-                std::cout << "WARNING: No SERVER_ID provided — heartbeats will not be sent.\n";
+                std::cout << "WARNING: No SERVER_ID provided - heartbeats will not be sent.\n";
             
             server.initializeServerInfo(info);
             server.runRelayServer();
@@ -481,19 +481,19 @@ int main(int argc, char** argv)
     heartSprite.setScale({ 2.5,2.5 });
 
     sf::Texture trees;
-    if (!trees.loadFromFile("tileset/tree.png"))
+    if (!trees.loadFromFile("Tileset/tree.png"))
     {
         std::cout << "error loading the knight tree sprite" << std::endl;
     }
 
     sf::Texture rosebush;
-    if (!rosebush.loadFromFile("tileset/bush.png"))
+    if (!rosebush.loadFromFile("Tileset/bush.png"))
     {
         std::cout << "error loading the knight rosebush sprite" << std::endl;
     }
 
     sf::Texture bush;
-    if (!bush.loadFromFile("tileset/grass.png"))
+    if (!bush.loadFromFile("Tileset/grass.png"))
     {
         std::cout << "error loading the knight bush sprite" << std::endl;
     }
@@ -793,7 +793,7 @@ int main(int argc, char** argv)
 
 
     sf::Texture tileTextureDemo;
-    if (!tileTextureDemo.loadFromFile("tileset/tilesetgrass.png")) {
+    if (!tileTextureDemo.loadFromFile("Tileset/tilesetgrass.png")) {
         std::cout << "Failed to load tile texture\n";
     }
 
@@ -816,7 +816,7 @@ int main(int argc, char** argv)
     }
 
     sf::Texture ArenaBanner;
-    if (!ArenaBanner.loadFromFile("GUI/banners.png"))
+    if (!ArenaBanner.loadFromFile("GUI/Banners.png"))
     {
         std::cout << "error loading the DarkWoodenGUI" << std::endl;
     }
@@ -882,7 +882,7 @@ int main(int argc, char** argv)
     std::vector<Arrow> arrows;
 
     sf::Texture tileSet;
-    tileSet.loadFromFile("tileset/tilesetgrass.png");
+    tileSet.loadFromFile("Tileset/tilesetgrass.png");
 
     std::vector<Tile> tiles;
     std::vector<Tile> multiplayerTiles;

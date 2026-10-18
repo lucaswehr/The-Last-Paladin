@@ -110,7 +110,7 @@ public:
 		sf::Sprite& deadSprite = Dead->getSprite();
 		deadSprite.setOrigin({ deadSprite.getLocalBounds().size.x * 0.5f, deadSprite.getLocalBounds().position.x });
 
-		dragonHurtBuffer.loadFromFile("Sounds/DragonHurt.mp3");
+		dragonHurtBuffer.loadFromFile("Sounds/dragonHurt.mp3");
 		dragonHurtSound.setBuffer(dragonHurtBuffer);
 
 		dragonHurtBuffer2.loadFromFile("Sounds/DragonHurt2.mp3");
