@@ -656,6 +656,12 @@ bool Client::connectToLobby(const std::string& hostname, unsigned short port)
         return false;
     }
 
+    // The lobby drops connections that stay silent for 10s (health probes), so
+    // identify as a real client right away instead of waiting for the first menu action.
+    sf::Packet hello;
+    hello << static_cast<int>(PacketType::RequestServerList);
+    (void)lobbySocket.send(hello);
+
     lobbySocket.setBlocking(false);
     std::cout << "Lobby Connected to server\n";
     return true;
