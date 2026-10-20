@@ -5,6 +5,9 @@ A C++ / SFML 2D side-scroller with a single player adventure, online multiplayer
 Trailer:
 https://www.youtube.com/watch?v=KqDAj2IHK88&t=25s
 
+Multiplayer Trailer:
+https://www.youtube.com/watch?v=mDU4deJfwFQ
+
 Play it Here:
 https://lucaswehr.itch.io/the-last-paladin
 
