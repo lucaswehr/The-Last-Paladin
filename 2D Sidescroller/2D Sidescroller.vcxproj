@@ -157,6 +157,7 @@
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="text.cpp" />
     <ClCompile Include="Tile.cpp" />
+    <ClCompile Include="UdpLink.cpp" />
     <ClCompile Include="wolf.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -165,6 +166,7 @@
     <ClInclude Include="AssetManager.hpp" />
     <ClInclude Include="attackData.h" />
     <ClInclude Include="CharacterType.h" />
+    <ClInclude Include="ControllerLink.hpp" />
     <ClInclude Include="DamageNumber.hpp" />
     <ClInclude Include="DebugOverlay.hpp" />
     <ClInclude Include="DeflectionDemo.hpp" />

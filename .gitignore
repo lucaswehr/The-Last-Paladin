@@ -361,3 +361,49 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+## ---------------------------------------------------------------------------
+## Linux / CMake / cross-platform
+## ---------------------------------------------------------------------------
+
+# CMake build trees and generated files
+[Bb]uild/
+[Bb]uild-*/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Compiled objects, libraries and executables
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.out
+the_last_paladin
+lobby_server
+game_server
+core
+core.*
+
+# Editors / tooling
+.vscode/
+.idea/
+.cache/
+.clangd
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Windows release bundle (exe, DLLs, asset copy)
+PlayGame/

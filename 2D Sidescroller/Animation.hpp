@@ -38,32 +38,26 @@ public:
         elapsedTime += deltaTime;
 
         if (elapsedTime >= frameDuration) {
+
             elapsedTime = 0.f;
             currentFrame = (currentFrame + 1); 
             
-
-         if (currentFrame >= frameCount)
-         {
-            if (shouldLoop)
+            if (currentFrame >= frameCount)
             {
-                
-                currentFrame = 0;
-            }
-            else
-            {
-               currentFrame = frameCount - 1;
-
-                finished = true;  
-
-            
+                if (shouldLoop)
+                {
+                    currentFrame = 0;
+                }
+                else
+                {
+                    currentFrame = frameCount - 1;
+                    finished = true;
+                }
             }
 
-         }
-            
-            updateTexture(); 
+            updateTexture();      
         }     
     }
-
 
     void setPosition(float x, float y) {
         sprite.setPosition(sf::Vector2f(x, y));
@@ -79,9 +73,7 @@ public:
         sprite.setScale(sf::Vector2f(scaleX, scaleY));
     }
 
-    void draw(sf::RenderWindow& window) {
-
-      
+    void draw(sf::RenderWindow& window) {   
         window.draw(sprite);
     }
 
@@ -172,19 +164,16 @@ private:
     sf::Vector2f offset = { 0.f, 0.f };
 
     void updateTexture()
-    {
-       
+    {     
         auto size = texture.getSize();
       
         int frameWidth = texture.getSize().x / frameCount;  
         int frameHeight = texture.getSize().y / frameRows; 
 
-       
-       int left = frameWidth * currentFrame;   
+        int left = frameWidth * currentFrame;   
         int top = frameHeight * rowToAnimate;  
-
-       
-       sprite.setTextureRect(sf::IntRect({ left, top }, { frameWidth, frameHeight }));
+  
+        sprite.setTextureRect(sf::IntRect({ left, top }, { frameWidth, frameHeight }));
         
         if (enableFlip)
         {         
@@ -197,9 +186,6 @@ private:
             else {
                 sprite.setOrigin(sf::Vector2f(sprite.getLocalBounds().size.x / 2.f, sprite.getLocalBounds().size.y / 2.f - 21));
             }
-          
-
-        }
-       
+        }     
     }
 };

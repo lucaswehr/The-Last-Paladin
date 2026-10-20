@@ -25,6 +25,7 @@
 #include "DeflectionDemo.hpp"
 #include "ParryDemo.hpp"
 #include "MenuHelper.hpp"
+#include "ControllerLink.hpp"
 #include <thread>
 #include <ctime>
 #include <atomic>
@@ -919,6 +920,15 @@ int main(int argc, char** argv)
     float alpha = 0.f;
     float fadeSpeed = 150.f;
 
+    auto controller = ControllerLink::create();
+    controller->open("");   // unused for the BLE gamepad; SFML finds it on its own
+
+    if (sf::Joystick::isConnected(0))
+        std::cout << "Controller: "
+        << sf::Joystick::getIdentification(0).name.toAnsiString() << "\n";
+    else
+        std::cout << "No controller connected yet (it will be picked up when it pairs)\n";
+
     while (window.isOpen())
     {
         sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
@@ -1438,11 +1448,7 @@ int main(int argc, char** argv)
                     default:
                         break;
                     }
-
-
-                }
-
-                
+                }           
             }
 
             if (event->is<sf::Event::TextEntered>())
@@ -1606,7 +1612,6 @@ int main(int argc, char** argv)
                     playSong = true;
                     playSong2 = false;
                     window.setMouseCursorVisible(false);
-
                 }
                                        
                 singlePlayerKnight->updateSinglePlayer(deltaTime, tiles, enemies, arrows, standardFont);
@@ -1651,11 +1656,8 @@ int main(int argc, char** argv)
                             skeleton->shootArrow(arrows, tiles, deltaTime); // Shoots arrow if needed
                     }
 
-
                     enemy->update(deltaTime, tiles, enemies);
-
                 }
-
 
                 sf::Vector2f knightPosition = singlePlayerKnight->getPlayerBox().getPosition();
 
@@ -1686,14 +1688,12 @@ int main(int argc, char** argv)
 
                 if (singlePlayerKnight->getPlayerBox().getGlobalBounds().position.y < 2000)
                 {
-
                     if (knightPosition.y > center.y + marginY) {
                         center.y = knightPosition.y - marginY;
                     }
                     else if (knightPosition.y < center.y - marginY) {
                         center.y = knightPosition.y + marginY;
                     }
-
                 }
 
                 center.x = std::floor(center.x + 0.5f);
@@ -1730,12 +1730,9 @@ int main(int argc, char** argv)
                             if (endDelay.getElapsedTime() > endTime)
                             {
                                 gameState = GameState::end;
-                            }
-
-                       
+                            }                  
                         }
                     }
-
                 }
            
                 singlePlayerKnight->getHealthBar().update(deltaTime, singlePlayerKnight->getHealth(), 100.f, backgroundShape.getPosition().x + 50, backgroundShape.getPosition().y + 30);                
@@ -1760,6 +1757,14 @@ int main(int argc, char** argv)
                 for (const auto& arrow2 : arrows)
                 {
                     window.draw(arrow2.sprite);
+                }
+            
+                std::string msg;
+                while (controller->readLine(msg)) {
+                    if (msg == "DAMAGE_EVENT") {           
+                        enemies.emplace_back(std::make_unique<Dragon>(dragonIdle, dragonWalk, dragonAttack2, dragonRise, dragonFlight, dragonSpecial, dragonLanding,
+                            dragonHurt, dragonDead, fancyFontText, standardFont, singlePlayerKnight->getPlayerBox().getPosition().x, singlePlayerKnight->getPlayerBox().getPosition().y - 1000, singlePlayerColor));
+                    }
                 }
 
                 window.draw(inventory);
@@ -1797,7 +1802,6 @@ int main(int argc, char** argv)
 
                 }
 
-
                 outline = singlePlayerKnight->deathText.getText().getOutlineColor();
                 outline.a = static_cast<unsigned char>(alpha);
                 singlePlayerKnight->deathText.getText().setOutlineColor(outline);
@@ -1812,19 +1816,16 @@ int main(int argc, char** argv)
                 singlePlayerKnight->deathText.setPosition(backgroundShape.getPosition().x + 500, backgroundShape.getPosition().y + 300);
                 singlePlayerKnight->deathText.draw(window);
 
-
                 backToMenuDelay.start();
                 if (backToMenuDelay.getElapsedTime() > backToMenuTime)
                 {
                     gameState = GameState::mainMenu;
                 }
 
-
                 break;
             }
             case GameState::level1Pause:
             {
-
                 levelOne.draw(window);
                 menuMusic.stop();
                 levelDelay.start();
@@ -1835,12 +1836,10 @@ int main(int argc, char** argv)
                     gameState = GameState::playing;
                 }
 
-
                 break;
             }
             case GameState::end:
             {
-
                 if (playSong4)
                 {
                     singlePlayerKnight->enemeyFelledSound.play();
@@ -1917,7 +1916,6 @@ int main(int argc, char** argv)
                 window.draw(knightRollingDemo.getSprite());
                 window.draw(knightHangingDemo.getSprite());
                 window.draw(knightDrinkingDemo.getSprite());
-
 
                 break;
             }
@@ -2063,7 +2061,6 @@ int main(int argc, char** argv)
                     if (id == myID) continue;                                                              
 
                     attackers->updateRemotePlayers(deltaTime, multiplayerTiles);
-
                 }
               
                 for (auto& [id, attacker] : players) // Attacker is all players except for me
