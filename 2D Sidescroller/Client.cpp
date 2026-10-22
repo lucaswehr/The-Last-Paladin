@@ -621,8 +621,9 @@ bool Client::connectToGameServer(sf::IpAddress ip, unsigned short port)
 
     std::cout << "Trying to connect to " << ip.toString() << ":" << port << std::endl;
 
-    if (gameSocket.connect(ip, port) != sf::Socket::Status::Done)
+    if (gameSocket.connect(ip, port, sf::seconds(3.f)) != sf::Socket::Status::Done)
     {
+        gameSocket.setBlocking(false);
         std::cout << "Game Connection failed\n";
         return false;
     }
@@ -650,8 +651,9 @@ bool Client::connectToLobby(const std::string& hostname, unsigned short port)
         << port
         << std::endl;
 
-    if (lobbySocket.connect(*ip, port) != sf::Socket::Status::Done)
+    if (lobbySocket.connect(*ip, port, sf::seconds(3.f)) != sf::Socket::Status::Done)
     {
+        lobbySocket.setBlocking(false);
         std::cout << "Lobby Connection failed\n";
         return false;
     }

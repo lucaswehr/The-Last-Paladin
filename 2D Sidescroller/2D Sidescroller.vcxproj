@@ -157,7 +157,6 @@
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="text.cpp" />
     <ClCompile Include="Tile.cpp" />
-    <ClCompile Include="UdpLink.cpp" />
     <ClCompile Include="wolf.cpp" />
   </ItemGroup>
   <ItemGroup>

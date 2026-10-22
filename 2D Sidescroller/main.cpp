@@ -25,16 +25,17 @@
 #include "DeflectionDemo.hpp"
 #include "ParryDemo.hpp"
 #include "MenuHelper.hpp"
-#include "ControllerLink.hpp"
 #include <thread>
 #include <ctime>
 #include <atomic>
 #include <cstdlib>
+#include <array>
 
 enum class GameState
 {
     mainMenu,
     playing,
+    singlePlayerPause,
     paused,
     howtoPlay,
     howToPlay2,
@@ -127,7 +128,7 @@ int main(int argc, char** argv)
             server.setServerID(assignedServerID);
 
             if (assignedServerID == -1)
-                std::cout << "WARNING: No SERVER_ID provided — heartbeats will not be sent.\n";
+                std::cout << "WARNING: No SERVER_ID provided ï¿½ heartbeats will not be sent.\n";
             
             server.initializeServerInfo(info);
             server.runRelayServer();
@@ -146,7 +147,7 @@ int main(int argc, char** argv)
 
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
 
-    sf::RenderWindow window(desktopMode, "The Last Paladin", sf::Style::Default);
+    sf::RenderWindow window(desktopMode, "The Last Paladin", sf::Style::Default, sf::State::Fullscreen);
     window.setVerticalSyncEnabled(true);
     window.setMouseCursorVisible(false);
 
@@ -227,10 +228,36 @@ int main(int argc, char** argv)
     Text errorMessage(fancyFontText, "Incorrect Password", 585.f, 675.f, sf::Color::Red, 50);
     int errorMessageCount = 0;
     bool showErrorMessage = false;
+    bool showLobbyConnectionError = false;
+    sf::Clock lobbyConnectionErrorClock;
+    constexpr float lobbyConnectionErrorDisplaySeconds = 5.f;
+    constexpr float lobbyConnectionErrorFadeSeconds = 1.f;
+
+    auto showLobbyConnectionFailure = [&]()
+    {
+        showLobbyConnectionError = true;
+        lobbyConnectionErrorClock.restart();
+    };
+
+    sf::RectangleShape lobbyConnectionErrorBackground({ 675.f, 60.f });
+    lobbyConnectionErrorBackground.setPosition({ 1200.f, 995.f });
+    lobbyConnectionErrorBackground.setFillColor(sf::Color(0, 0, 0, 210));
+    lobbyConnectionErrorBackground.setOutlineColor(sf::Color::Red);
+    lobbyConnectionErrorBackground.setOutlineThickness(2.f);
+
+    sf::Text lobbyConnectionError(standardFont);
+    lobbyConnectionError.setString("Could not connect to lobby server: Server is down");
+    lobbyConnectionError.setCharacterSize(36);
+    lobbyConnectionError.setFillColor(sf::Color::Red);
+    lobbyConnectionError.setOutlineColor(sf::Color::Black);
+    lobbyConnectionError.setOutlineThickness(1.f);
+    lobbyConnectionError.setPosition({ 1212.f, 1000.f });
 
     Text Create(fancyFontText, "Create", 775.f, 850.f, sf::Color::White, 150);
     Text Loading(fancyFontText, "Loading...", 600.f, 400.f, sf::Color::White, 200);
     Text Refresh(fancyFontText, "Refresh", 1425.f, 850.f, sf::Color::White, 50);
+    Text ResumeGame(fancyFontText, "Resume", 7300.f, 440.f, sf::Color::White, 100);
+    Text LeaveSinglePlayerGame(fancyFontText, "Leave", 700.f, 550.f, sf::Color::White, 90);
 
     Text Leave(fancyFontText, "Leave", 50.f, 900.f, sf::Color::White, 100);
     Text characterSelectLobby(fancyFontText, "Character Select", 275.f, 390.f, sf::Color::White, 80);
@@ -266,6 +293,58 @@ int main(int argc, char** argv)
     singlePlayerHealthText.setOutlineColor(sf::Color::Black);
     singlePlayerHealthText.setOutlineThickness(3);
     singlePlayerHealthText.setCharacterSize(30);
+
+    sf::RectangleShape pauseHintBackground({ 240.f, 64.f });
+    pauseHintBackground.setFillColor(sf::Color(0, 0, 0, 220));
+    pauseHintBackground.setOutlineColor(sf::Color(255, 255, 255, 230));
+    pauseHintBackground.setOutlineThickness(2.f);
+
+    std::array<sf::RectangleShape, 3> pauseHintMenuLines = {
+        sf::RectangleShape({ 25.f, 4.f }),
+        sf::RectangleShape({ 19.f, 4.f }),
+        sf::RectangleShape({ 13.f, 4.f })
+    };
+    for (auto& line : pauseHintMenuLines)
+        line.setFillColor(sf::Color::White);
+
+    sf::RectangleShape pauseHintIconPlate({ 42.f, 42.f });
+    pauseHintIconPlate.setPosition({ 10.f, 10.f });
+    pauseHintIconPlate.setFillColor(sf::Color(20, 20, 20, 255));
+    pauseHintIconPlate.setOutlineColor(sf::Color(210, 210, 210, 220));
+    pauseHintIconPlate.setOutlineThickness(1.f);
+
+    sf::RectangleShape pauseHintSeparator({ 2.f, 38.f });
+    pauseHintSeparator.setFillColor(sf::Color(200, 200, 200, 180));
+
+    sf::Text pauseHintLabel(standardFont);
+    pauseHintLabel.setString("PAUSE");
+    pauseHintLabel.setCharacterSize(22);
+    pauseHintLabel.setFillColor(sf::Color::White);
+
+    sf::RectangleShape pauseHintEscapeKey({ 64.f, 40.f });
+    pauseHintEscapeKey.setFillColor(sf::Color(35, 35, 35, 255));
+    pauseHintEscapeKey.setOutlineColor(sf::Color::White);
+    pauseHintEscapeKey.setOutlineThickness(2.f);
+
+    sf::Text pauseHintEscapeText(standardFont);
+    pauseHintEscapeText.setString("ESC");
+    pauseHintEscapeText.setCharacterSize(22);
+    pauseHintEscapeText.setFillColor(sf::Color::White);
+
+    sf::RectangleShape healHintKey({ 34.f, 34.f });
+    healHintKey.setFillColor(sf::Color(0, 0, 0, 220));
+    healHintKey.setOutlineColor(sf::Color::White);
+    healHintKey.setOutlineThickness(2.f);
+
+    sf::Text healHintKeyText(standardFont);
+    healHintKeyText.setString("R");
+    healHintKeyText.setCharacterSize(24);
+    healHintKeyText.setFillColor(sf::Color::White);
+    const sf::FloatRect healHintTextBounds = healHintKeyText.getLocalBounds();
+    healHintKeyText.setOrigin({
+        healHintTextBounds.position.x + healHintTextBounds.size.x / 2.f,
+        healHintTextBounds.position.y + healHintTextBounds.size.y / 2.f
+    });
 
     DebugOverlay debug(fancyFont);
 
@@ -654,6 +733,9 @@ int main(int argc, char** argv)
     sf::RectangleShape serverListBackgroundShape(sf::Vector2f(GAME_WIDTH, GAME_HEIGHT));
     serverListBackgroundShape.setTexture(&assets.getBackgroundTextures().serverListBackgroundTex);
 
+    sf::RectangleShape pauseOverlay({ GAME_WIDTH, GAME_HEIGHT });
+    pauseOverlay.setFillColor(sf::Color(0, 0, 0, 90));
+
     sf::RectangleShape createServerBackgroundShape(sf::Vector2f(GAME_WIDTH, GAME_HEIGHT));
     createServerBackgroundShape.setTexture(&assets.getBackgroundTextures().createServerBackgroundTex);
     assets.getBackgroundTextures().createServerBackgroundTex.setRepeated(true);
@@ -856,6 +938,10 @@ int main(int argc, char** argv)
     ServerListSprite.setScale({ 9,9 });
     ServerListSprite.setPosition({ 1100,-60});
 
+    sf::Sprite pauseMenuPanel(ServerListTexture);
+    pauseMenuPanel.setTextureRect(sf::IntRect({ 160, 40 }, { 95, 100 }));
+    pauseMenuPanel.setScale({ 6, 6 });
+
     characterSelectBackground1.setTextureRect(sf::IntRect({ 75, 40 }, { 85, 120 }));
     characterSelectBackground1.setScale({ 6,6 });
     characterSelectBackground1.setPosition({ 400,150 });
@@ -920,15 +1006,6 @@ int main(int argc, char** argv)
     float alpha = 0.f;
     float fadeSpeed = 150.f;
 
-    auto controller = ControllerLink::create();
-    controller->open("");   // unused for the BLE gamepad; SFML finds it on its own
-
-    if (sf::Joystick::isConnected(0))
-        std::cout << "Controller: "
-        << sf::Joystick::getIdentification(0).name.toAnsiString() << "\n";
-    else
-        std::cout << "No controller connected yet (it will be picked up when it pairs)\n";
-
     while (window.isOpen())
     {
         sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
@@ -983,6 +1060,25 @@ int main(int argc, char** argv)
                         resized->size.y
                     )
                 );
+            }
+
+            if (const auto* keyEvent = event->getIf<sf::Event::KeyPressed>())
+            {
+                if (keyEvent->code == sf::Keyboard::Key::Escape)
+                {
+                    if (gameState == GameState::playing)
+                    {
+                        gameState = GameState::singlePlayerPause;
+                        singlePlayerKnight->music.pause();
+                        window.setMouseCursorVisible(true);
+                    }
+                    else if (gameState == GameState::singlePlayerPause)
+                    {
+                        gameState = GameState::playing;
+                        singlePlayerKnight->music.play();
+                        window.setMouseCursorVisible(false);
+                    }
+                }
             }
 
             bool clickConsumed = false;
@@ -1188,10 +1284,18 @@ int main(int argc, char** argv)
                             if (Continue.getBounds().contains(mousePos))
                             {
                                 menuClickSound.play();
-                                cout << "CONNECTING FROM ENTER USERNAME INSTANCE OF CONNECT TO LOBBY" << endl;
-                                client.connectToLobby("last-paladin-lobby-lucas.westus.azurecontainer.io", lobbyPort); // Connect to lobby first to be able to use lobbysocket for requestServerList and other things
+                                cout << "CONNECTIdcsfNG FROM ENTER USERNAME INSTANCE OF CONNECT TO LOBBY" << endl;
                                 client.setPlayerName(nametag.str); // Set your player name to the one from the username textbox
-                                gameState = GameState::characterSelect;
+                                if (client.connectToLobby("last-paladin-lobby-lucas.westus.azurecontainer.io", lobbyPort))
+                                {
+                                    showLobbyConnectionError = false;
+                                    gameState = GameState::characterSelect;
+                                }
+                                else
+                                {
+                                    showLobbyConnectionFailure();
+                                    gameState = GameState::mainMenu;
+                                }
                                 clickConsumed = true;
                             }
                         }
@@ -1303,7 +1407,14 @@ int main(int argc, char** argv)
 
                                     client.maxLobbySize = server.maxPlayers;
 
-                                    client.connectToGameServer(server.ip, server.port); // Connect to game server when lobby is clicked on
+                                    if (!client.connectToGameServer(server.ip, server.port))
+                                    {
+                                        showLobbyConnectionFailure();
+                                        gameState = GameState::mainMenu;
+                                        break;
+                                    }
+
+                                    showLobbyConnectionError = false;
                                     client.rebuildLobbyPlayers();
                                     gameState = GameState::preGameLobby;
                                     break;
@@ -1350,17 +1461,25 @@ int main(int argc, char** argv)
 
                                     client.maxLobbySize = server.maxPlayers;                                   
 
-                                    client.connectToGameServer(server.ip, server.port); // Connect to game server when lobby is clicked on
-                                    client.rebuildLobbyPlayers();
+                                    if (!client.connectToGameServer(server.ip, server.port))
+                                    {
+                                        showLobbyConnectionFailure();
+                                        gameState = GameState::mainMenu;
+                                    }
+                                    else
+                                    {
+                                        showLobbyConnectionError = false;
+                                        client.rebuildLobbyPlayers();
 
-                                    cout << "CONNECTING TO "
-                                        << server.ip.toString()
-                                        << ":" << server.port << endl;
-                                    cout << "----------------------------------------" << endl;
+                                        cout << "CONNECTING TO "
+                                            << server.ip.toString()
+                                            << ":" << server.port << endl;
+                                        cout << "----------------------------------------" << endl;
 
-                                    gameState = GameState::preGameLobby;                                   
-                                    showErrorMessage = false;
-                                    errorMessageCount = 0;
+                                        gameState = GameState::preGameLobby;
+                                        showErrorMessage = false;
+                                        errorMessageCount = 0;
+                                    }
                                 }
                                 else
                                 {
@@ -1443,6 +1562,26 @@ int main(int argc, char** argv)
 
                             gameState = GameState::characterSelect;
                         }                      
+                        break;
+                    }
+                    case GameState::singlePlayerPause:
+                    {
+                        if (ResumeGame.getBounds().contains(mousePos))
+                        {
+                            menuClickSound.play();
+                            gameState = GameState::playing;
+                            singlePlayerKnight->music.play();
+                            window.setMouseCursorVisible(false);
+                            clickConsumed = true;
+                        }
+                        else if (LeaveSinglePlayerGame.getBounds().contains(mousePos))
+                        {
+                            menuClickSound.play();
+                            gameState = GameState::mainMenu;
+                            playSong = true;
+                            window.setMouseCursorVisible(true);
+                            clickConsumed = true;
+                        }
                         break;
                     }
                     default:
@@ -1599,6 +1738,31 @@ int main(int argc, char** argv)
                 exit.update(mousePos, menuHelper);
                 howToPlay.update(mousePos, menuHelper);
                 BattleMode.update(mousePos, menuHelper);
+
+                if (showLobbyConnectionError)
+                {
+                    const float elapsedSeconds = lobbyConnectionErrorClock.getElapsedTime().asSeconds();
+
+                    if (elapsedSeconds >= lobbyConnectionErrorDisplaySeconds + lobbyConnectionErrorFadeSeconds)
+                    {
+                        showLobbyConnectionError = false;
+                    }
+                    else
+                    {
+                        const float fadeAmount = elapsedSeconds <= lobbyConnectionErrorDisplaySeconds
+                            ? 1.f
+                            : 1.f - (elapsedSeconds - lobbyConnectionErrorDisplaySeconds) / lobbyConnectionErrorFadeSeconds;
+                        const auto alpha = static_cast<unsigned char>(255.f * fadeAmount);
+
+                        lobbyConnectionErrorBackground.setFillColor(sf::Color(0, 0, 0, static_cast<unsigned char>(210.f * fadeAmount)));
+                        lobbyConnectionErrorBackground.setOutlineColor(sf::Color(255, 0, 0, alpha));
+                        lobbyConnectionError.setFillColor(sf::Color(255, 0, 0, alpha));
+                        lobbyConnectionError.setOutlineColor(sf::Color(0, 0, 0, alpha));
+
+                        window.draw(lobbyConnectionErrorBackground);
+                        window.draw(lobbyConnectionError);
+                    }
+                }
                
                 break;
             }
@@ -1759,20 +1923,59 @@ int main(int argc, char** argv)
                     window.draw(arrow2.sprite);
                 }
             
-                std::string msg;
-                while (controller->readLine(msg)) {
-                    if (msg == "DAMAGE_EVENT") {           
-                        enemies.emplace_back(std::make_unique<Dragon>(dragonIdle, dragonWalk, dragonAttack2, dragonRise, dragonFlight, dragonSpecial, dragonLanding,
-                            dragonHurt, dragonDead, fancyFontText, standardFont, singlePlayerKnight->getPlayerBox().getPosition().x, singlePlayerKnight->getPlayerBox().getPosition().y - 1000, singlePlayerColor));
-                    }
-                }
-
                 window.draw(inventory);
                 window.draw(singlePlayerPotionSprite);
+                healHintKey.setPosition({
+                    singlePlayerPotionSprite.getPosition().x +20.f,
+                    singlePlayerPotionSprite.getPosition().y + 95.f
+                });
+                healHintKeyText.setPosition({
+                    healHintKey.getPosition().x + 17.f,
+                    healHintKey.getPosition().y + 17.f
+                });
+                window.draw(healHintKey);
+                window.draw(healHintKeyText);
                 singlePlayerKnight->potionNumText.draw(window);
                 singlePlayerKnight->getHealthBar().draw(window);          
                 window.draw(singlePlayerHealthText);
                 window.draw(heartSprite);
+
+                const sf::Vector2f pauseHintPosition(
+                    backgroundShape.getPosition().x + GAME_WIDTH - 260.f,
+                    backgroundShape.getPosition().y + 24.f
+                );
+                pauseHintBackground.setPosition(pauseHintPosition);
+                pauseHintIconPlate.setPosition({ pauseHintPosition.x + 10.f, pauseHintPosition.y + 11.f });
+                pauseHintSeparator.setPosition({ pauseHintPosition.x + 62.f, pauseHintPosition.y + 13.f });
+
+                for (std::size_t i = 0; i < pauseHintMenuLines.size(); ++i)
+                {
+                    pauseHintMenuLines[i].setPosition({
+                        pauseHintPosition.x + 18.f,
+                        pauseHintPosition.y + 20.f + static_cast<float>(i) * 10.f
+                    });
+                }
+
+                pauseHintLabel.setPosition({ pauseHintPosition.x + 76.f, pauseHintPosition.y + 18.f });
+                pauseHintEscapeKey.setPosition({ pauseHintPosition.x + 164.f, pauseHintPosition.y + 12.f });
+                const sf::FloatRect escapeTextBounds = pauseHintEscapeText.getLocalBounds();
+                pauseHintEscapeText.setOrigin({
+                    escapeTextBounds.position.x + escapeTextBounds.size.x / 2.f,
+                    escapeTextBounds.position.y + escapeTextBounds.size.y / 2.f
+                });
+                pauseHintEscapeText.setPosition({
+                    pauseHintPosition.x + 196.f,
+                    pauseHintPosition.y + 32.f
+                });
+
+                window.draw(pauseHintBackground);
+                window.draw(pauseHintIconPlate);
+                window.draw(pauseHintSeparator);
+                for (const auto& line : pauseHintMenuLines)
+                    window.draw(line);
+                window.draw(pauseHintLabel);
+                window.draw(pauseHintEscapeKey);
+                window.draw(pauseHintEscapeText);
            
                 break;
             }
@@ -1822,6 +2025,69 @@ int main(int argc, char** argv)
                     gameState = GameState::mainMenu;
                 }
 
+                break;
+            }
+            case GameState::singlePlayerPause:
+            {
+                window.setView(gameView);
+
+                window.draw(backgroundShape);
+                singlePlayerLevel.draw(window, tiles, decorationTiles);
+                singlePlayerKnight->draw(window);
+
+                for (auto& enemy : enemies)
+                    enemy->draw(window);
+
+                for (const auto& arrow2 : arrows)
+                    window.draw(arrow2.sprite);
+
+                window.draw(inventory);
+                window.draw(singlePlayerPotionSprite);
+                singlePlayerKnight->potionNumText.draw(window);
+                singlePlayerKnight->getHealthBar().draw(window);
+                window.draw(singlePlayerHealthText);
+                window.draw(heartSprite);
+
+                window.setView(menuView);
+
+                const sf::Vector2f center(GAME_WIDTH / 2.f, GAME_HEIGHT / 2.f);
+                pauseOverlay.setPosition({ 0.f, 0.f });
+
+                const sf::FloatRect panelBounds = pauseMenuPanel.getGlobalBounds();
+                pauseMenuPanel.setPosition({
+                    center.x - panelBounds.size.x / 2.f,
+                    center.y - panelBounds.size.y / 2.f - 70.f
+                });
+
+                const sf::FloatRect centeredPanelBounds = pauseMenuPanel.getGlobalBounds();
+                const float panelCenterX = centeredPanelBounds.position.x + centeredPanelBounds.size.x / 2.f;
+                const float panelCenterY = centeredPanelBounds.position.y + centeredPanelBounds.size.y / 2.f;
+
+                sf::Text& resumeText = ResumeGame.getText();
+                const sf::FloatRect resumeLocalBounds = resumeText.getLocalBounds();
+                resumeText.setOrigin({
+                    resumeLocalBounds.position.x + resumeLocalBounds.size.x / 2.f,
+                    resumeLocalBounds.position.y + resumeLocalBounds.size.y / 2.f
+                });
+                resumeText.setPosition({ panelCenterX - 40.f, panelCenterY + 15.f });
+
+                sf::Text& leaveText = LeaveSinglePlayerGame.getText();
+                const sf::FloatRect leaveLocalBounds = leaveText.getLocalBounds();
+                leaveText.setOrigin({
+                    leaveLocalBounds.position.x + leaveLocalBounds.size.x / 2.f,
+                    leaveLocalBounds.position.y + leaveLocalBounds.size.y / 2.f
+                });
+                leaveText.setPosition({ panelCenterX - 40.f, panelCenterY + 150.f });
+
+                window.draw(pauseOverlay);
+                window.draw(pauseMenuPanel);
+
+                ResumeGame.update(mousePos, menuHelper);
+                LeaveSinglePlayerGame.update(mousePos, menuHelper);
+                ResumeGame.draw(window);
+                LeaveSinglePlayerGame.draw(window);
+
+                window.setMouseCursorVisible(true);
                 break;
             }
             case GameState::level1Pause:
