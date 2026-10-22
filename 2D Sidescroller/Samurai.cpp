@@ -322,7 +322,7 @@ void Samurai::spawnArrow(sf::Vector2f pos, Direction dir, int arrowID, float arr
 {
 	sf::Vector2f direction = (dir == Direction::Right) ? sf::Vector2f(1, 0) : sf::Vector2f(-1, 0);
 
-	arrows.emplace_back(arrowTex, pos, direction, arrowGravity);
+	arrows.emplace_back(arrowTex, pos, direction, arrowGravity, arrowVelocityMultiplier);
 
 	arrows.back().id = arrowID;
 

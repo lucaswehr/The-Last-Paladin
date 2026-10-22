@@ -6,8 +6,9 @@
 #include <unordered_map>
 #include "PacketType.h"
 
-
 using namespace std;
+
+extern const float DEFAULT_ARROW_SPEED;
 
 void Client::createServer(const ServerInfo& info)
 {
@@ -240,7 +241,7 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
                 {
                     sf::Color color = playerColors[id % playerColors.size()];
 
-                    players.try_emplace(id, PlayerFactory::create(lobbyPlayers[id].character, spawnpoints[id].x, spawnpoints[id].y, assets, fonttext, color, standardFont));
+                    players.try_emplace(id, PlayerFactory::create(lobbyPlayers[id].character, spawnpoints[id].x, spawnpoints[id].y, assets, fonttext, color, standardFont, DEFAULT_ARROW_SPEED));
                 }
 
                 players.at(id)->setNetworkState(x, y, state, dir);
@@ -262,7 +263,7 @@ void Client::receiveNetworkEvent(std::unordered_map<int, unique_ptr<Player>>& pl
                 {
                     sf::Color color = playerColors[id % playerColors.size()];
 
-                    players.try_emplace(id, PlayerFactory::create(lobbyPlayers[id].character, spawnpoints[id].x, spawnpoints[id].y, assets, fonttext, color, standardFont));
+                    players.try_emplace(id, PlayerFactory::create(lobbyPlayers[id].character, spawnpoints[id].x, spawnpoints[id].y, assets, fonttext, color, standardFont, DEFAULT_ARROW_SPEED));
                 }
 
                 players.at(id)->startAttack(players.at(id)->getAttackTable()[attackID], direction);

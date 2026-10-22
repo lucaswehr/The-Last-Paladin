@@ -10,7 +10,7 @@ class Skeleton : public Enemy
 
 public:
 
-	Skeleton(sf::Texture& idleTexture, sf::Texture& shot1Texture, sf::Texture& arrowTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, const sf::Font standardFont, float x, float y, int arrowGravityLevel) :
+	Skeleton(sf::Texture& idleTexture, sf::Texture& shot1Texture, sf::Texture& arrowTexture, sf::Texture& hurtTexture, sf::Texture& deadTexture, const sf::Font standardFont, float x, float y, int arrowGravityLevel, float arrowVelocityMultiplier, enemyDirection initialDirection) :
 		Enemy(maxHealth),
 		arrowTex(arrowTexture),
 		bowShotSound(bowShotBuffer),
@@ -20,6 +20,8 @@ public:
 	{
 		damageFontText = standardFont;
 		changedGravity = arrowGravityLevel;
+
+		this->arrowVelocityMultiplier = arrowVelocityMultiplier;
 
 		Idle = std::make_unique<Animation>(idleTexture, 7, 1, 0.2f, 0, false, true);
 
@@ -81,7 +83,7 @@ public:
 		DeathSound.setBuffer(DeathBuffer);
 
 
-		lastDir = enemyDirection::Right;
+		lastDir = initialDirection;
 
 		sf::Sprite& IdleSprite = Idle->getSprite();
 		IdleSprite.setOrigin({ IdleSprite.getLocalBounds().size.x * 0.5f, IdleSprite.getLocalBounds().position.x + 128.f });
@@ -163,6 +165,8 @@ private:
 	bool playOnce = false;
 	bool playSoundOnce = false;
 	int changedGravity = 0.f;
+
+	float arrowVelocityMultiplier = 0;
 
 	bool executeHurtSoundOnce = false;
 

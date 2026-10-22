@@ -209,7 +209,7 @@ void Skeleton::shootArrow(std::vector<Arrow>& arrows, std::vector<Tile>& tiles, 
 
 			randomGravity = changedGravity == 2 ? 500 + std::rand() % 400 : std::rand() % 1000 + 2000;
 
-			arrows.emplace_back(arrowTex, pos, direction, randomGravity);
+			arrows.emplace_back(arrowTex, pos, direction, randomGravity, arrowVelocityMultiplier);
 
 			arrowFired = true;
 		}

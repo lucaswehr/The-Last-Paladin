@@ -10,7 +10,7 @@ using namespace std;
 class PlayerFactory {
 
 public:
-	unique_ptr<Player> static create(CharacterType type, float xPos, float yPos, AssetManager& assets, std::string& fonttext, sf::Color& color, sf::Font& standardFont)
+	unique_ptr<Player> static create(CharacterType type, float xPos, float yPos, AssetManager& assets, std::string& fonttext, sf::Color& color, sf::Font& standardFont, float arrowVelocityMultiplier)
 	{
 		switch (type)
 		{
@@ -18,7 +18,7 @@ public:
 				return make_unique<Knight>(xPos, yPos, assets.getKnightTextures(), fonttext, color, standardFont);
 
 			case CharacterType::Samurai:
-				return make_unique<Samurai>(xPos, yPos, assets.getSamuraiTextures(), color, standardFont);
+				return make_unique<Samurai>(xPos, yPos, assets.getSamuraiTextures(), color, standardFont, arrowVelocityMultiplier);
 			default:
 				return nullptr;
 		}

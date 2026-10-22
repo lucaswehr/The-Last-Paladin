@@ -36,6 +36,29 @@ void wolf::update(float dt, std::vector<Tile>& tiles, std::vector<std::unique_pt
 
 	if (handleDeathLogic(dt)) return;
 
+	if (knightDead)
+	{
+		if (state != State::Idle || currentAnimation != idleAnim.get())
+		{
+			state = State::Idle;
+			velocity.x = 0.f;
+			sprintAttacking = false;
+			lungeSpeed = 0.f;
+			wolfHurt = false;
+			wolfHitsShield = false;
+			knightDamaged = false;
+			pendingShieldKnockback = false;
+			chargeSound.stop();
+			suspenseSound.stop();
+			switchAnimation(idleAnim.get());
+			idleAnim->reset();
+		}
+
+		applyFacing();
+		currentAnimation->update(dt);
+		return;
+	}
+
 	if (attackCooldown > 0.f) attackCooldown -= dt;
 
 	handleHurtLogic();
@@ -448,7 +471,13 @@ void wolf::isHurtFalse() { wolfHurt = false; }
 void wolf::hitsShieldTrue() { wolfHitsShield = true; }
 
 enemyDirection wolf::getDirection() { return lastDir; }
-void wolf::setDirection(enemyDirection newDir) { lastDir = newDir; }
+void wolf::setDirection(enemyDirection newDir)
+{
+	if (state == State::Sprint || (state == State::Attack && sprintAttacking))
+		return;
+
+	lastDir = newDir;
+}
 
 Animation* wolf::getCurrentEnemyAnimation() { return currentAnimation; }
 

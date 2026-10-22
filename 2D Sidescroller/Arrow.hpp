@@ -6,13 +6,13 @@ class Arrow
 {
 public: 
 
-	Arrow(sf::Texture& arrowTexture, sf::Vector2f startpos, sf::Vector2f direction, int gravityChange) : sprite(arrowTexture)
+	Arrow(sf::Texture& arrowTexture, sf::Vector2f startpos, sf::Vector2f direction, int gravityChange, float arrowSpeedMultiplier) : sprite(arrowTexture)
 	{
 		sprite.setPosition(startpos);
 		sprite.setScale({ direction.x < 0.f ? -1.8f : 1.8f, 1.8f });
 		sprite.setOrigin({ 20,64 });
 
-		velocity = direction * 2000.f;
+		velocity = direction * arrowSpeedMultiplier;
 
 		arrowBox.setFillColor(sf::Color(255, 0, 0, 128));
 		arrowBox.setSize({ 30.f,5.f });

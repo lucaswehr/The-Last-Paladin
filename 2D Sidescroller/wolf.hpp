@@ -72,6 +72,7 @@ public:
 	void knightDamagedFalse() override;
 
 	bool isDead();
+	void setKnightDead(bool value) { knightDead = value; }
 	void isHurtTrue();
 	void isHurtFalse();
 	void hitsShieldTrue();
@@ -142,6 +143,7 @@ private:
 	bool playOnce = false;          // damage/sound applied for the current hit
 	bool playAnimationOnce = false; // death started
 	bool dead = false;
+	bool knightDead = false;
 	bool sprintOnce = false;
 
 	float knockbackTimer = 0.f;

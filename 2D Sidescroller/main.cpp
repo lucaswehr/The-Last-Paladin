@@ -95,6 +95,9 @@ std::string getEnvOrDefault(const char* key, const std::string& fallback)
     return val ? std::string(val) : fallback;
 }
 
+
+extern const float DEFAULT_ARROW_SPEED = 2000.f;
+
 int main(int argc, char** argv)
 {
     //// ---------------------NETWORKING--------------------------//
@@ -780,7 +783,7 @@ int main(int argc, char** argv)
 
     sf::Color samuraiColor = sf::Color::Blue;
 
-    std::unique_ptr<Player> testSamurai = std::make_unique<Samurai>(350.f, 200.f, assets.getSamuraiTextures(), samuraiColor, standardFont);
+    std::unique_ptr<Player> testSamurai = std::make_unique<Samurai>(350.f, 200.f, assets.getSamuraiTextures(), samuraiColor, standardFont, DEFAULT_ARROW_SPEED);
 
     unordered_map<int, unique_ptr<Player>> players;
     HUDLayout HUDlayout;
@@ -1636,13 +1639,14 @@ int main(int argc, char** argv)
          
             singlePlayerKnight->resetPlayer({ 400.f, 1825.f }, true);
 
-            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 5560.f, 1825.f, 2));
+            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 5560.f, 1825.f, 2, DEFAULT_ARROW_SPEED, enemyDirection::Right));
             enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(),standardFont, 4100.f, 2115.f));
             enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 3000.f, 1635.f));
-            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 7892.f, 1060.f, 1));
+            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 7892.f, 1060.f, 1, DEFAULT_ARROW_SPEED, enemyDirection::Right));
             enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 7300.f, 1346.f));
             enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 7100.f, 100.f));
             enemies.emplace_back(std::make_unique<wolf>(assets.getWolfTextures(), standardFont, 9000.f, 100.f));
+            enemies.emplace_back(std::make_unique<Skeleton>(SkeletonIdle, SkeletonShot1, arrow, skeletonHurt, skeletonDead, standardFont, 12450.f, 1825.f, 2, DEFAULT_ARROW_SPEED * 1.5, enemyDirection::Left));
             enemies.emplace_back(std::make_unique<Dragon>(dragonIdle, dragonWalk, dragonAttack2, dragonRise, dragonFlight, dragonSpecial, dragonLanding, dragonHurt, dragonDead, fancyFontText, standardFont, 14000.f, 100.f,singlePlayerColor));
            
             pendingReset = false;
@@ -1813,6 +1817,9 @@ int main(int argc, char** argv)
 
                 for (auto& enemy : enemies)
                 {
+                    if (auto* wolfEnemy = dynamic_cast<wolf*>(enemy.get()))
+                        wolfEnemy->setKnightDead(singlePlayerKnight->isDeadBool());
+
                     Skeleton* skeleton = dynamic_cast<Skeleton*>(enemy.get());
                     if (skeleton)
                     {
@@ -2307,7 +2314,7 @@ int main(int argc, char** argv)
                     float spawnX = leftX + spacing * (myID + 1);
                     float spawnY = 550.f;
 
-                    players.try_emplace(myID, PlayerFactory::create(characterType, spawnpoints[myID].x, spawnpoints[myID].y, assets, fancyFontText, myColor, standardFont));
+                    players.try_emplace(myID, PlayerFactory::create(characterType, spawnpoints[myID].x, spawnpoints[myID].y, assets, fancyFontText, myColor, standardFont, DEFAULT_ARROW_SPEED));
 
                 }
 
@@ -2980,7 +2987,7 @@ int main(int argc, char** argv)
                     float spawnX = leftX + spacing * (myID + 1);
                     float spawnY = 597.f;
 
-                    players.try_emplace(myID, PlayerFactory::create(characterType, spawnpoints[myID].x, spawnpoints[myID].y, assets, fancyFontText, myColor, standardFont));
+                    players.try_emplace(myID, PlayerFactory::create(characterType, spawnpoints[myID].x, spawnpoints[myID].y, assets, fancyFontText, myColor, standardFont, DEFAULT_ARROW_SPEED));
 
                 }               
 
